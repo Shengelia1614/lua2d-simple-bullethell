@@ -23,8 +23,9 @@ function Player.new(x, y)
     self.y = y
     self.width = 20
     self.height = 20
-    self.speed = 300
 
+    self.baseSpeed = 300
+    self.speed = self.baseSpeed
     -- animation
     self.currentFrame = 1
     self.animationTimer = 0

@@ -37,6 +37,12 @@ function PlayingState:update(dt)
         self.barrier:deploy()
     end
 
+    if love.keyboard.isDown('lshift') then
+        self.player.speed = self.player.baseSpeed * 0.5
+    else
+        self.player.speed = self.player.baseSpeed
+    end
+
     self.enemy:update(dt, love.graphics.getWidth(), love.graphics.getHeight())
 
     if self.enemy:shouldShoot() then
