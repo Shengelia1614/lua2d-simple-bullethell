@@ -13,7 +13,7 @@ function PlayingState:enter()
     self.bullets = {}
     self.gameTime = 0
     self.currentMaxBounces = 3
-    self.nextBounceIncrement = 30
+    self.nextBounceIncrement = 20
 end
 
 function PlayingState:update(dt)
@@ -24,7 +24,7 @@ function PlayingState:update(dt)
 
     if self.gameTime >= self.nextBounceIncrement then
         self.currentMaxBounces = self.currentMaxBounces + 1
-        self.nextBounceIncrement = self.nextBounceIncrement + 120
+        self.nextBounceIncrement = self.nextBounceIncrement + 20
     end
 
     self.player:update(dt, love.graphics.getWidth(), love.graphics.getHeight())
