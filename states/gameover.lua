@@ -1,5 +1,7 @@
 local GameOverState = {}
 
+local VIRTUAL_WIDTH, VIRTUAL_HEIGHT = 1280, 720
+
 function GameOverState:enter()
 end
 
@@ -12,10 +14,9 @@ end
 
 function GameOverState:draw()
     love.graphics.setColor(1, 0, 0)
-    love.graphics.printf('GAME OVER', 0, love.graphics.getHeight() / 2 - 40, love.graphics.getWidth(), 'center')
+    love.graphics.printf('GAME OVER', 0, VIRTUAL_HEIGHT / 2 - 40, VIRTUAL_WIDTH, 'center')
     love.graphics.setColor(1, 1, 1)
-    love.graphics.printf('Press SPACE or ENTER to restart', 0, love.graphics.getHeight() / 2, love.graphics.getWidth(),
-        'center')
+    love.graphics.printf('Press SPACE or ENTER to restart', 0, VIRTUAL_HEIGHT / 2, VIRTUAL_WIDTH, 'center')
 end
 
 function GameOverState:exit()

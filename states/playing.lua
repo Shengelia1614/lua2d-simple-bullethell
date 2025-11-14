@@ -6,8 +6,10 @@ local Collision = require('utils.collision')
 
 local PlayingState = {}
 
+local VIRTUAL_WIDTH, VIRTUAL_HEIGHT = 1280, 720
+
 function PlayingState:enter()
-    self.player = Player.new(400 - 10, 300 - 10)
+    self.player = Player.new(VIRTUAL_WIDTH / 2 - 10, VIRTUAL_HEIGHT / 2 - 10)
     self.enemy = Enemy.new(200, 150, 150, 100)
     self.barrier = Barrier.new(self.player)
     self.bullets = {}
@@ -20,14 +22,14 @@ function PlayingState:update(dt)
     -- update game time
     self.gameTime = self.gameTime + dt
 
-    -- check if we need to increment max bounces (every 2 minutes)
-
+    -- check if we need to increment max bounces (every 20 seconds)
     if self.gameTime >= self.nextBounceIncrement then
         self.currentMaxBounces = self.currentMaxBounces + 1
         self.nextBounceIncrement = self.nextBounceIncrement + 20
     end
 
-    self.player:update(dt, love.graphics.getWidth(), love.graphics.getHeight())
+    -- Pass virtual dimensions to player
+    self.player:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
 
     -- Update barrier
     self.barrier:update(dt)
@@ -43,7 +45,7 @@ function PlayingState:update(dt)
         self.player.speed = self.player.baseSpeed
     end
 
-    self.enemy:update(dt, love.graphics.getWidth(), love.graphics.getHeight())
+    self.enemy:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
 
     if self.enemy:shouldShoot() then
         local ex, ey = self.enemy:getCenter()
@@ -57,7 +59,7 @@ function PlayingState:update(dt)
 
     for i = #self.bullets, 1, -1 do
         local bullet = self.bullets[i]
-        bullet:update(dt, love.graphics.getWidth(), love.graphics.getHeight())
+        bullet:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
 
         -- check barrier collision for bullets
         if self.barrier:isActive() then
