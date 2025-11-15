@@ -109,7 +109,7 @@ def map_notes_to_bins(freqs_hz, piano_freqs):
 
 
 def detect_note_events(S, t, f, piano_freqs, piano_names, 
-                       onset_threshold=0.15, peak_prominence=0.05, min_note_gap=0.15, min_magnitude=0.15):
+                       onset_threshold=0.01, peak_prominence=0.001, min_note_gap=0.05, min_magnitude=0.01):
     """
     Detect piano note events from spectrogram using onset detection.
     
@@ -125,10 +125,10 @@ def detect_note_events(S, t, f, piano_freqs, piano_names,
     - f: frequency array
     - piano_freqs: 88 piano frequencies
     - piano_names: 88 piano note names
-    - onset_threshold: minimum onset strength to trigger detection (default 0.15)
-    - peak_prominence: minimum prominence for onset peaks (default 0.05)
-    - min_note_gap: minimum time (seconds) between same note events (default 0.15s)
-    - min_magnitude: minimum magnitude at peak to count as real note (default 0.15)
+    - onset_threshold: minimum onset strength to trigger detection (default 0.01)
+    - peak_prominence: minimum prominence for onset peaks (default 0.001)
+    - min_note_gap: minimum time (seconds) between same note events (default 0.05s)
+    - min_magnitude: minimum magnitude at peak to count as real note (default 0.01)
     """
     note_bins = map_notes_to_bins(f, piano_freqs)
     
@@ -210,18 +210,18 @@ def main():
                        help='Input audio file or directory. If omitted, process all files in notes/audio')
     parser.add_argument('--out', '-o', 
                        help='Output JSON path for single file. If omitted, saves to notes/note_data/<name>_notes.json')
-    parser.add_argument('--nperseg', type=int, default=4096, 
+    parser.add_argument('--nperseg', type=int, default=8096, 
                        help='STFT window length (samples). Higher = better freq resolution')
     parser.add_argument('--noverlap', type=int, default=None, 
                        help='STFT overlap (samples). Default nperseg//2')
-    parser.add_argument('--onset-threshold', type=float, default=0.05,
-                       help='Minimum onset strength to detect note attack (default 0.15 = 15%%)')
-    parser.add_argument('--peak-prominence', type=float, default=0.05,
-                       help='Minimum prominence for onset peaks (default 0.05 = 5%%)')
-    parser.add_argument('--min-note-gap', type=float, default=0.05,
-                       help='Minimum time gap (seconds) between same note events (default 0.15s)')
-    parser.add_argument('--min-magnitude', type=float, default=0.1,
-                       help='Minimum magnitude to count as real note (default 0.15 = 15%%)')
+    parser.add_argument('--onset-threshold', type=float, default=0.01,
+                       help='Minimum onset strength to detect note attack (default 0.01 = 1%%)')
+    parser.add_argument('--peak-prominence', type=float, default=0.001,
+                       help='Minimum prominence for onset peaks (default 0.001 = 0.1%%)')
+    parser.add_argument('--min-note-gap', type=float, default=0.1,
+                       help='Minimum time gap (seconds) between same note events (default 0.05s)')
+    parser.add_argument('--min-magnitude', type=float, default=0.01,
+                       help='Minimum magnitude to count as real note (default 0.01 = 1%%)')
     args = parser.parse_args()
     
     # Piano note setup
