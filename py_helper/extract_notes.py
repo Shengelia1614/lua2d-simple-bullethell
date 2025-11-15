@@ -109,15 +109,15 @@ def map_notes_to_bins(freqs_hz, piano_freqs):
 
 
 def detect_note_events(S, t, f, piano_freqs, piano_names, 
-                       onset_threshold=0.02, peak_prominence=0.01):
+                       onset_threshold=0.15, peak_prominence=0.05, min_note_gap=0.15, min_magnitude=0.15):
     """
-    Detect piano note events from spectrogram.
+    Detect piano note events from spectrogram using onset detection.
     
     Strategy:
-    1. For each time frame, extract magnitude at each piano note bin
-    2. Find local peaks (notes that stand out in the spectrum)
-    3. Compare current frame magnitude to previous frame to detect onsets
-    4. Output note events: (time, note_name, magnitude)
+    1. For each piano note frequency, compute its onset strength over time
+    2. Onset strength = difference in magnitude from previous frame
+    3. Find peaks in onset strength (sharp increases = note attacks)
+    4. Filter by minimum magnitude and time gaps
     
     Parameters:
     - S: spectrogram magnitude (freq_bins x time_frames), normalized 0-1
@@ -125,57 +125,83 @@ def detect_note_events(S, t, f, piano_freqs, piano_names,
     - f: frequency array
     - piano_freqs: 88 piano frequencies
     - piano_names: 88 piano note names
-    - onset_threshold: minimum increase in magnitude to trigger onset (default 0.02 = 2%)
-    - peak_prominence: minimum prominence for peak detection in spectrum (default 0.01 = 1%)
+    - onset_threshold: minimum onset strength to trigger detection (default 0.15)
+    - peak_prominence: minimum prominence for onset peaks (default 0.05)
+    - min_note_gap: minimum time (seconds) between same note events (default 0.15s)
+    - min_magnitude: minimum magnitude at peak to count as real note (default 0.15)
     """
     note_bins = map_notes_to_bins(f, piano_freqs)
     
     # Extract magnitude time series for each piano note
-    # note_series[i, j] = magnitude of piano note i at time frame j
     note_series = S[note_bins, :]  # shape: (88, num_frames)
     
-    events = []
-    prev_mags = np.zeros(88)
+    all_events = []
     
-    # Track active notes to avoid duplicate detections
-    active_notes = np.zeros(88, dtype=bool)
-    
-    for frame_idx in range(note_series.shape[1]):
-        current_mags = note_series[:, frame_idx]
-        timestamp = t[frame_idx]
+    # Process each note independently
+    for note_idx in range(88):
+        magnitudes = note_series[note_idx, :]
         
-        # Detect peaks in this frame's spectrum across the 88 notes
-        # A peak means this note's magnitude is higher than neighboring notes
-        peaks, properties = find_peaks(current_mags, prominence=peak_prominence)
+        # Compute onset strength: positive differences only
+        onset_strength = np.diff(magnitudes, prepend=0)
+        onset_strength = np.maximum(onset_strength, 0)  # Only keep increases
         
-        # For each peak, check if it's an onset (significant increase from previous frame)
-        for peak_note_idx in peaks:
-            mag = current_mags[peak_note_idx]
-            prev_mag = prev_mags[peak_note_idx]
-            
-            # Onset detection: current magnitude significantly higher than previous
-            # OR absolute magnitude is high and this note wasn't recently active
-            is_onset = (mag > prev_mag + onset_threshold) or \
-                       (mag > 0.1 and not active_notes[peak_note_idx] and mag > prev_mag * 1.5)
-            
-            if is_onset:
-                events.append({
-                    'time': float(timestamp),
-                    'note': piano_names[peak_note_idx],
-                    'frequency': float(piano_freqs[peak_note_idx]),
-                    'magnitude': float(mag),
-                    'midi': int(peak_note_idx + 21)  # MIDI note number (A0=21, C8=108)
+        # Find peaks in onset strength (these are note attacks)
+        peaks, properties = find_peaks(onset_strength, 
+                                      height=onset_threshold,
+                                      prominence=peak_prominence,
+                                      distance=int(min_note_gap / (t[1] - t[0])))  # min frames between peaks
+        
+        # Create events for each detected onset
+        for peak_idx in peaks:
+            # Require minimum magnitude at the peak
+            if magnitudes[peak_idx] >= min_magnitude:
+                all_events.append({
+                    'time': float(t[peak_idx]),
+                    'note': piano_names[note_idx],
+                    'frequency': float(piano_freqs[note_idx]),
+                    'magnitude': float(magnitudes[peak_idx]),
+                    'onset_strength': float(onset_strength[peak_idx]),
+                    'midi': int(note_idx + 21),
+                    'note_idx': note_idx
                 })
-                active_notes[peak_note_idx] = True
-        
-        # Reset active notes when magnitude drops significantly
-        for i in range(88):
-            if active_notes[i] and current_mags[i] < prev_mags[i] * 0.5:
-                active_notes[i] = False
-        
-        prev_mags = current_mags.copy()
     
-    return events
+    # Sort events by time
+    all_events.sort(key=lambda e: e['time'])
+    
+    # Post-process: remove likely harmonics
+    # If multiple notes detected at same time, keep only the strongest ones
+    filtered_events = []
+    i = 0
+    while i < len(all_events):
+        # Find all events within a small time window (30ms)
+        window_end = i
+        current_time = all_events[i]['time']
+        while window_end < len(all_events) and all_events[window_end]['time'] - current_time < 0.03:
+            window_end += 1
+        
+        # Get events in this window
+        window_events = all_events[i:window_end]
+        
+        # Keep only events with magnitude > 70% of max in window, or top 3 strongest
+        if len(window_events) > 1:
+            max_mag = max(e['magnitude'] for e in window_events)
+            # Keep strong events (>70% of max)
+            strong_events = [e for e in window_events if e['magnitude'] >= max_mag * 0.7]
+            # If too many, keep only top 3 by magnitude
+            if len(strong_events) > 3:
+                strong_events.sort(key=lambda e: e['magnitude'], reverse=True)
+                strong_events = strong_events[:3]
+            filtered_events.extend(strong_events)
+        else:
+            filtered_events.extend(window_events)
+        
+        i = window_end
+    
+    # Remove the temporary note_idx field
+    for e in filtered_events:
+        del e['note_idx']
+    
+    return filtered_events
 
 
 def main():
@@ -188,10 +214,14 @@ def main():
                        help='STFT window length (samples). Higher = better freq resolution')
     parser.add_argument('--noverlap', type=int, default=None, 
                        help='STFT overlap (samples). Default nperseg//2')
-    parser.add_argument('--onset-threshold', type=float, default=0.02,
-                       help='Minimum magnitude increase to detect note onset (default 0.02 = 2%%)')
-    parser.add_argument('--peak-prominence', type=float, default=0.01,
-                       help='Minimum prominence for peak detection (default 0.01 = 1%%)')
+    parser.add_argument('--onset-threshold', type=float, default=0.05,
+                       help='Minimum onset strength to detect note attack (default 0.15 = 15%%)')
+    parser.add_argument('--peak-prominence', type=float, default=0.05,
+                       help='Minimum prominence for onset peaks (default 0.05 = 5%%)')
+    parser.add_argument('--min-note-gap', type=float, default=0.05,
+                       help='Minimum time gap (seconds) between same note events (default 0.15s)')
+    parser.add_argument('--min-magnitude', type=float, default=0.1,
+                       help='Minimum magnitude to count as real note (default 0.15 = 15%%)')
     args = parser.parse_args()
     
     # Piano note setup
@@ -217,7 +247,9 @@ def main():
         # Detect note events
         events = detect_note_events(S, t, f, piano_freqs, piano_names,
                                     onset_threshold=args.onset_threshold,
-                                    peak_prominence=args.peak_prominence)
+                                    peak_prominence=args.peak_prominence,
+                                    min_note_gap=args.min_note_gap,
+                                    min_magnitude=args.min_magnitude)
         
         # Save to JSON
         base = os.path.splitext(os.path.basename(path))[0]
@@ -264,7 +296,9 @@ def main():
                 f, t, S = compute_spectrogram(x, sr, nperseg=args.nperseg, noverlap=args.noverlap)
                 events = detect_note_events(S, t, f, piano_freqs, piano_names,
                                            onset_threshold=args.onset_threshold,
-                                           peak_prominence=args.peak_prominence)
+                                           peak_prominence=args.peak_prominence,
+                                           min_note_gap=args.min_note_gap,
+                                           min_magnitude=args.min_magnitude)
                 
                 os.makedirs(out_dir, exist_ok=True)
                 output = {

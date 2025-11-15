@@ -1,5 +1,7 @@
+local MenuState = require('states.menu')
 local PlayingState = require('states.playing')
 local GameOverState = require('states.gameover')
+local BossFight1State = require('states.bossfight_1')
 
 -- game logic is as follows
 -- you there is an enemy moving around the screen bouncing off walls and shooting bullets at the player
@@ -10,8 +12,10 @@ local GameOverState = require('states.gameover')
 -- every 30 seconds the max bounces increase by 1
 
 local states = {
+    menu = MenuState,
     playing = PlayingState,
-    gameover = GameOverState
+    gameover = GameOverState,
+    bossfight_1 = BossFight1State
 }
 
 local currentState = nil
@@ -65,7 +69,12 @@ function love.load()
 
     updateCanvasScale()
     math.randomseed(os.time())
-    changeState('playing')
+
+    -- Run note extraction script silently in background on startup (no window)
+    -- Comment out the line below if you don't want auto-extraction
+    os.execute('powershell -WindowStyle Hidden -Command "python py_helper/extract_notes.py"')
+
+    changeState('menu')
 end
 
 function love.resize(w, h)
@@ -96,4 +105,22 @@ function love.draw()
     love.graphics.clear(0, 0, 0) -- Black letterbox bars
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(canvas, canvasOffsetX, canvasOffsetY, 0, canvasScale, canvasScale)
+end
+
+function love.keypressed(key)
+    if currentState and currentState.keypressed then
+        local nextState = currentState:keypressed(key)
+        if nextState then
+            changeState(nextState)
+        end
+    end
+end
+
+function love.mousepressed(x, y, button)
+    if currentState and currentState.mousepressed then
+        local nextState = currentState:mousepressed(x, y, button)
+        if nextState then
+            changeState(nextState)
+        end
+    end
 end
