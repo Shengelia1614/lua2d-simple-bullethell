@@ -109,7 +109,7 @@ function Player:draw()
 end
 
 function Player:getCollisionBox()
-    return self.x, self.y, self.width, self.height
+    return self.x + self.width / 2, self.y + self.height / 2, 1, 1
 end
 
 return Player

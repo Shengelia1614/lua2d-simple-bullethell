@@ -70,9 +70,7 @@ function love.load()
     updateCanvasScale()
     math.randomseed(os.time())
 
-    -- Run note extraction script silently in background on startup (no window)
-    -- Comment out the line below if you don't want auto-extraction
-    os.execute('powershell -WindowStyle Hidden -Command "python py_helper/extract_notes.py"')
+    -- os.execute('powershell -WindowStyle Hidden -Command "python py_helper/extract_notes.py"')
 
     changeState('menu')
 end

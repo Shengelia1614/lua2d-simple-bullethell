@@ -7,13 +7,16 @@ function MenuState:enter()
     self.audioFiles = {}
     self.startButtonHovered = false
 
-    -- Scan notes/audio directory for audio files
-    local audioDir = "notes/audio"
-    local files = love.filesystem.getDirectoryItems(audioDir)
+    -- Scan notes/midi directory for MIDI files (user requested selecting tracks from notes/midi)
+    local midiDir = "notes/midi"
+    local files = {}
+    if love.filesystem.getInfo(midiDir) then
+        files = love.filesystem.getDirectoryItems(midiDir)
+    end
 
     for _, file in ipairs(files) do
         local ext = file:match("%.([^%.]+)$")
-        if ext and (ext:lower() == "mp3" or ext:lower() == "wav" or ext:lower() == "ogg" or ext:lower() == "flac") then
+        if ext and (ext:lower() == "mid" or ext:lower() == "midi") then
             table.insert(self.audioFiles, file)
         end
     end
@@ -21,9 +24,9 @@ function MenuState:enter()
     -- Sort files alphabetically
     table.sort(self.audioFiles)
 
-    -- If no audio files found, add a placeholder
+    -- If no MIDI files found, add a placeholder
     if #self.audioFiles == 0 then
-        table.insert(self.audioFiles, "No audio files found")
+        table.insert(self.audioFiles, "No MIDI files found")
     end
 
     -- Button dimensions
@@ -175,9 +178,10 @@ function MenuState:mousepressed(x, y, button)
 end
 
 function MenuState:startGame()
-    if #self.audioFiles > 0 and self.audioFiles[1] ~= "No audio files found" then
-        -- Store selected audio file globally so bossfight can access it
-        _G.selectedAudioFile = self.audioFiles[self.selectedIndex]
+    if #self.audioFiles > 0 and self.audioFiles[1] ~= "No MIDI files found" then
+        -- Store selected track filename (with extension) globally so bossfight can access it
+        -- The boss state will look for the corresponding _notes.json in notes/note_data and try to find a matching audio file in notes/audio
+        _G.selectedTrackFile = self.audioFiles[self.selectedIndex]
         return 'bossfight_1'
     end
     return nil

@@ -7,9 +7,8 @@ local BossFight1State = {}
 
 local VIRTUAL_WIDTH, VIRTUAL_HEIGHT = 1280, 720
 
--- Simple JSON decoder for our specific use case
 local function decodeJSON(str)
-    -- Remove whitespace
+    -- Remove whitespace to simplify simple pattern searches (keeps parser small and dependency-free)
     str = str:gsub("%s+", "")
 
     -- Find the events array
@@ -35,23 +34,35 @@ local function decodeJSON(str)
 
         local objStr = str:sub(objStart, objEnd)
 
-        -- Extract fields
+        -- Extract the new fields: time (float), midi_number (int), and duration if present.
+        -- Keep backwards compatibility with older key 'midi'.
         local time = objStr:match('"time":([%d%.%-]+)')
-        local note = objStr:match('"note":"([^"]+)"')
-        local frequency = objStr:match('"frequency":([%d%.%-]+)')
-        local magnitude = objStr:match('"magnitude":([%d%.%-]+)')
-        local onset = objStr:match('"onset_strength":([%d%.%-]+)')
-        local midi = objStr:match('"midi":(%d+)')
+        local midi_num = objStr:match('"midi_number":(%d+)') or objStr:match('"midi":(%d+)')
+        local duration = objStr:match('"duration":([%d%.%-]+)')
+        local velocity = objStr:match('"velocity":([%d%.%-]+)')
+        local note_on_str = objStr:match('"note_on":(true|false)')
 
-        if time and midi then
-            table.insert(events, {
+        -- If note_on exists, convert to boolean; if missing assume true (backwards compatible)
+        local note_on = true
+        if note_on_str == 'true' then
+            note_on = true
+        elseif note_on_str == 'false' then
+            note_on = false
+        end
+
+        if time and midi_num then
+            local ev = {
                 time = tonumber(time),
-                note = note,
-                frequency = tonumber(frequency),
-                magnitude = tonumber(magnitude),
-                onset_strength = tonumber(onset),
-                midi = tonumber(midi)
-            })
+                midi = tonumber(midi_num), -- keep key 'midi' because game logic expects event.midi
+                velocity = tonumber(velocity)
+            }
+            if duration then
+                ev.duration = tonumber(duration)
+            end
+            if note_on_str then
+                ev.note_on = note_on
+            end
+            table.insert(events, ev)
         end
 
         currentPos = objEnd + 1
@@ -61,6 +72,11 @@ local function decodeJSON(str)
             break
         end
     end
+
+    -- Sort events by time to ensure chronological order
+    table.sort(events, function(a, b)
+        return a.time < b.time
+    end)
 
     return {
         events = events
@@ -103,7 +119,7 @@ function BossBullet.new(x, y, targetX, targetY, midi)
     -- MIDI value is 1-88, map to size scale 2.5 to 1.0 (reversed: lower MIDI = bigger)
     local midiClamped = math.max(1, math.min(88, midi))
     -- Invert the scale: when MIDI=1, scaleFactor=2.5; when MIDI=88, scaleFactor=1.0
-    local scaleFactor = 2.5 - ((midiClamped - 1) / (88 - 1) * 1.5) -- 2.5 to 1.0
+    local scaleFactor = 3 - ((midiClamped - 1) / (88 - 1) * 2) -- 2.5 to 1.0
 
     -- Base dimensions scaled by MIDI
     local baseSize = 8
@@ -111,7 +127,7 @@ function BossBullet.new(x, y, targetX, targetY, midi)
     self.height = baseSize * scaleFactor
 
     -- Base speed scaled by MIDI (50% to 100%)
-    local baseSpeed = 250
+    local baseSpeed = 80
     self.speed = baseSpeed * scaleFactor
 
     -- Arc parameters based on MIDI (unclamped for more dramatic arcs)
@@ -148,7 +164,7 @@ function BossBullet.new(x, y, targetX, targetY, midi)
     self.arcSpeed = 0.8 -- how fast we traverse the arc
 
     self.active = true
-    self.maxBounces = 3
+    self.maxBounces = 1
     self.bounceCount = 0
 
     -- animation
@@ -290,17 +306,14 @@ end
 
 -- BossFight1 State Functions
 function BossFight1State:enter()
-    -- Get selected audio file from global variable (set by menu)
-    local selectedAudio = _G.selectedAudioFile or "Erik Satie - Gnossienne No. 1.mp3"
+    -- Determine selected track (menu now sets _G.selectedTrackFile). For backward compatibility also check _G.selectedAudioFile
+    local selectedFile = _G.selectedTrackFile or _G.selectedAudioFile or "Erik Satie - Gnossienne No. 1.mp3"
 
-    -- Convert audio filename to notes filename
-    -- Remove extension and add "_notes.json"
-    local audioNameWithoutExt = selectedAudio:match("(.+)%.[^%.]+$") or selectedAudio
-    local notesFilename = audioNameWithoutExt .. "_notes.json"
+    -- Remove extension to get base name
+    local baseName = selectedFile:match("(.+)%.[^%.]+$") or selectedFile
 
-    -- Build full paths
-    local audioPath = "notes/audio/" .. selectedAudio
-    local notePath = "notes/note_data/" .. notesFilename
+    -- Build note JSON path using the naming scheme: <base>_notes.json in notes/note_data
+    local notePath = "notes/note_data/" .. baseName .. "_notes.json"
 
     -- Load note data
     self.noteEvents = {}
@@ -318,11 +331,14 @@ function BossFight1State:enter()
         print("Could not load notes file: " .. notePath)
     end
 
-    -- Load and play music
-    self.music = love.audio.newSource(audioPath, "stream")
-    self.music:setLooping(false)
-    self.music:play()
-    print("Playing: " .. selectedAudio)
+    -- Load or lazily prepare note audio sources. Guard against environments
+    -- where the audio subsystem or love.audio.newSource might not be available
+    -- (prevents runtime errors such as "attempt to call a number value").
+    self.notes = {}
+    for i = 21, 108 do
+        self.notes[i] = love.audio.newSource("notes/keys/" .. tostring(i - 20) .. ".mp3", "stream")
+        self.notes[i]:setLooping(false)
+    end
 
     -- Initialize player
     self.player = Player.new(VIRTUAL_WIDTH / 2 - 10, VIRTUAL_HEIGHT / 2 - 10)
@@ -378,7 +394,21 @@ function BossFight1State:update(dt)
 
             -- Create bullet with MIDI-based properties
             local bullet = BossBullet.new(bossX, bossY, playerX, playerY, event.midi)
+
+            -- Add bullet to active bullets list
             table.insert(self.bullets, bullet)
+
+            -- key = love.audio.newSource("notes/keys/" .. tostring(event.midi - 21) .. ".mp3", "static")
+            -- key:setLooping(false)
+            -- key:setVolume(event.velocity / 127)
+            -- index = #self.notes + 1
+            -- table.insert(self.notes, key)
+            -- self.notes[index]:play()
+
+            self.notes[event.midi]:setVolume(event.velocity / 127)
+            self.notes[event.midi]:stop()
+
+            self.notes[event.midi]:play()
 
             self.currentEventIndex = self.currentEventIndex + 1
         else
@@ -454,8 +484,13 @@ function BossFight1State:draw()
 end
 
 function BossFight1State:exit()
-    if self.music then
-        self.music:stop()
+    if self.notes then
+        for _, src in pairs(self.notes) do
+            if src and type(src.stop) == 'function' then
+                -- stop any playing source
+                src:stop()
+            end
+        end
     end
 end
 
