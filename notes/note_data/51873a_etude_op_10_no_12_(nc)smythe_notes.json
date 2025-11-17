@@ -266,7 +266,7 @@
       "midi_number": 31,
       "note_name": "G1",
       "velocity": 73,
-      "duration": 0.098958,
+      "duration": 0.098959,
       "channel": 0
     },
     {
@@ -318,11 +318,11 @@
       "channel": 0
     },
     {
-      "time": 4.492187,
+      "time": 4.492188,
       "midi_number": 36,
       "note_name": "C2",
       "velocity": 74,
-      "duration": 0.476563,
+      "duration": 0.476562,
       "channel": 0
     },
     {
@@ -590,11 +590,11 @@
       "channel": 0
     },
     {
-      "time": 8.257813,
+      "time": 8.257812,
       "midi_number": 31,
       "note_name": "G1",
       "velocity": 65,
-      "duration": 0.088541,
+      "duration": 0.088542,
       "channel": 0
     },
     {
@@ -634,7 +634,7 @@
       "midi_number": 80,
       "note_name": "G#5",
       "velocity": 79,
-      "duration": 0.414063,
+      "duration": 0.414062,
       "channel": 0
     },
     {
@@ -702,19 +702,19 @@
       "channel": 0
     },
     {
-      "time": 9.023438,
+      "time": 9.023437,
       "midi_number": 79,
       "note_name": "G5",
       "velocity": 81,
-      "duration": 0.494791,
+      "duration": 0.494792,
       "channel": 0
     },
     {
-      "time": 9.023438,
+      "time": 9.023437,
       "midi_number": 77,
       "note_name": "F5",
       "velocity": 83,
-      "duration": 0.622395,
+      "duration": 0.622396,
       "channel": 0
     },
     {
@@ -874,7 +874,7 @@
       "midi_number": 67,
       "note_name": "G4",
       "velocity": 82,
-      "duration": 0.158855,
+      "duration": 0.158854,
       "channel": 0
     },
     {
@@ -894,7 +894,7 @@
       "channel": 0
     },
     {
-      "time": 10.601563,
+      "time": 10.601562,
       "midi_number": 62,
       "note_name": "D4",
       "velocity": 78,
@@ -906,7 +906,7 @@
       "midi_number": 74,
       "note_name": "D5",
       "velocity": 81,
-      "duration": 0.052084,
+      "duration": 0.052083,
       "channel": 0
     },
     {
@@ -922,7 +922,7 @@
       "midi_number": 75,
       "note_name": "D#5",
       "velocity": 82,
-      "duration": 0.190105,
+      "duration": 0.190104,
       "channel": 0
     },
     {
@@ -942,11 +942,11 @@
       "channel": 0
     },
     {
-      "time": 10.882813,
+      "time": 10.882812,
       "midi_number": 71,
       "note_name": "B4",
       "velocity": 83,
-      "duration": 0.182291,
+      "duration": 0.182292,
       "channel": 0
     },
     {
@@ -966,11 +966,11 @@
       "channel": 0
     },
     {
-      "time": 10.976563,
+      "time": 10.976562,
       "midi_number": 67,
       "note_name": "G4",
       "velocity": 74,
-      "duration": 0.054687,
+      "duration": 0.054688,
       "channel": 0
     },
     {
@@ -2898,7 +2898,7 @@
       "midi_number": 47,
       "note_name": "B2",
       "velocity": 66,
-      "duration": 0.427084,
+      "duration": 0.427083,
       "channel": 0
     },
     {
@@ -5354,7 +5354,7 @@
       "midi_number": 89,
       "note_name": "F6",
       "velocity": 83,
-      "duration": 0.763021,
+      "duration": 0.76302,
       "channel": 0
     },
     {
@@ -5366,7 +5366,7 @@
       "channel": 0
     },
     {
-      "time": 44.273438,
+      "time": 44.273437,
       "midi_number": 46,
       "note_name": "A#2",
       "velocity": 67,
@@ -5382,11 +5382,11 @@
       "channel": 0
     },
     {
-      "time": 44.414063,
+      "time": 44.414062,
       "midi_number": 53,
       "note_name": "F3",
       "velocity": 73,
-      "duration": 0.302083,
+      "duration": 0.302084,
       "channel": 0
     },
     {
@@ -5410,7 +5410,7 @@
       "midi_number": 67,
       "note_name": "G4",
       "velocity": 82,
-      "duration": 0.122396,
+      "duration": 0.122395,
       "channel": 0
     },
     {
@@ -5430,35 +5430,35 @@
       "channel": 0
     },
     {
-      "time": 45.148438,
+      "time": 45.148437,
       "midi_number": 77,
       "note_name": "F5",
       "velocity": 82,
-      "duration": 0.351562,
+      "duration": 0.351563,
       "channel": 0
     },
     {
-      "time": 45.148438,
+      "time": 45.148437,
       "midi_number": 86,
       "note_name": "D6",
       "velocity": 83,
-      "duration": 0.351562,
+      "duration": 0.351563,
       "channel": 0
     },
     {
-      "time": 45.148438,
+      "time": 45.148437,
       "midi_number": 74,
       "note_name": "D5",
       "velocity": 80,
-      "duration": 0.518229,
+      "duration": 0.51823,
       "channel": 0
     },
     {
-      "time": 45.148438,
+      "time": 45.148437,
       "midi_number": 82,
       "note_name": "A#5",
       "velocity": 79,
-      "duration": 0.523437,
+      "duration": 0.523438,
       "channel": 0
     },
     {
@@ -5510,11 +5510,11 @@
       "channel": 0
     },
     {
-      "time": 45.617188,
+      "time": 45.617187,
       "midi_number": 86,
       "note_name": "D6",
       "velocity": 78,
-      "duration": 0.414062,
+      "duration": 0.414063,
       "channel": 0
     },
     {
@@ -5574,11 +5574,11 @@
       "channel": 0
     },
     {
-      "time": 46.132813,
+      "time": 46.132812,
       "midi_number": 82,
       "note_name": "A#5",
       "velocity": 84,
-      "duration": 1.591145,
+      "duration": 1.591146,
       "channel": 0
     },
     {
@@ -5606,11 +5606,11 @@
       "channel": 0
     },
     {
-      "time": 46.539063,
+      "time": 46.539062,
       "midi_number": 47,
       "note_name": "B2",
       "velocity": 65,
-      "duration": 0.132812,
+      "duration": 0.132813,
       "channel": 0
     },
     {
@@ -5654,7 +5654,7 @@
       "channel": 0
     },
     {
-      "time": 47.085938,
+      "time": 47.085937,
       "midi_number": 47,
       "note_name": "B2",
       "velocity": 76,
@@ -5674,7 +5674,7 @@
       "midi_number": 45,
       "note_name": "A2",
       "velocity": 77,
-      "duration": 0.151042,
+      "duration": 0.151041,
       "channel": 0
     },
     {
@@ -5718,19 +5718,19 @@
       "channel": 0
     },
     {
-      "time": 47.976563,
+      "time": 47.976562,
       "midi_number": 75,
       "note_name": "D#5",
       "velocity": 67,
-      "duration": 1.091145,
+      "duration": 1.091146,
       "channel": 0
     },
     {
-      "time": 47.976563,
+      "time": 47.976562,
       "midi_number": 80,
       "note_name": "G#5",
       "velocity": 69,
-      "duration": 1.252604,
+      "duration": 1.252605,
       "channel": 0
     },
     {
@@ -5750,11 +5750,11 @@
       "channel": 0
     },
     {
-      "time": 48.289063,
+      "time": 48.289062,
       "midi_number": 43,
       "note_name": "G2",
       "velocity": 54,
-      "duration": 0.164062,
+      "duration": 0.164063,
       "channel": 0
     },
     {
@@ -5778,7 +5778,7 @@
       "midi_number": 51,
       "note_name": "D#3",
       "velocity": 54,
-      "duration": 0.479167,
+      "duration": 0.479166,
       "channel": 0
     },
     {
@@ -5806,11 +5806,11 @@
       "channel": 0
     },
     {
-      "time": 48.976563,
+      "time": 48.976562,
       "midi_number": 50,
       "note_name": "D3",
       "velocity": 54,
-      "duration": 0.127604,
+      "duration": 0.127605,
       "channel": 0
     },
     {
@@ -5834,7 +5834,7 @@
       "midi_number": 71,
       "note_name": "B4",
       "velocity": 68,
-      "duration": 0.713542,
+      "duration": 0.713541,
       "channel": 0
     },
     {
@@ -5846,11 +5846,11 @@
       "channel": 0
     },
     {
-      "time": 49.179688,
+      "time": 49.179687,
       "midi_number": 75,
       "note_name": "D#5",
       "velocity": 68,
-      "duration": 0.604166,
+      "duration": 0.604167,
       "channel": 0
     },
     {
@@ -5986,7 +5986,7 @@
       "midi_number": 50,
       "note_name": "D3",
       "velocity": 54,
-      "duration": 0.127605,
+      "duration": 0.127604,
       "channel": 0
     },
     {
@@ -5998,7 +5998,7 @@
       "channel": 0
     },
     {
-      "time": 50.867188,
+      "time": 50.867187,
       "midi_number": 54,
       "note_name": "F#3",
       "velocity": 55,
@@ -6010,7 +6010,7 @@
       "midi_number": 58,
       "note_name": "A#3",
       "velocity": 59,
-      "duration": 0.177084,
+      "duration": 0.177083,
       "channel": 0
     },
     {
@@ -6046,19 +6046,19 @@
       "channel": 0
     },
     {
-      "time": 51.351563,
+      "time": 51.351562,
       "midi_number": 75,
       "note_name": "D#5",
       "velocity": 70,
-      "duration": 0.697916,
+      "duration": 0.697917,
       "channel": 0
     },
     {
-      "time": 51.351563,
+      "time": 51.351562,
       "midi_number": 66,
       "note_name": "F#4",
       "velocity": 68,
-      "duration": 0.716145,
+      "duration": 0.716146,
       "channel": 0
     },
     {
@@ -6114,7 +6114,7 @@
       "midi_number": 30,
       "note_name": "F#1",
       "velocity": 63,
-      "duration": 1.408855,
+      "duration": 1.408854,
       "channel": 0
     },
     {
@@ -6126,19 +6126,19 @@
       "channel": 0
     },
     {
-      "time": 52.164063,
+      "time": 52.164062,
       "midi_number": 73,
       "note_name": "C#5",
       "velocity": 70,
-      "duration": 1.26302,
+      "duration": 1.263021,
       "channel": 0
     },
     {
-      "time": 52.164063,
+      "time": 52.164062,
       "midi_number": 78,
       "note_name": "F#5",
       "velocity": 68,
-      "duration": 1.273437,
+      "duration": 1.273438,
       "channel": 0
     },
     {
@@ -6166,19 +6166,19 @@
       "channel": 0
     },
     {
-      "time": 52.554688,
+      "time": 52.554687,
       "midi_number": 45,
       "note_name": "A2",
       "velocity": 57,
-      "duration": 0.32552,
+      "duration": 0.325521,
       "channel": 0
     },
     {
-      "time": 52.710938,
+      "time": 52.710937,
       "midi_number": 49,
       "note_name": "C#3",
       "velocity": 57,
-      "duration": 0.179687,
+      "duration": 0.179688,
       "channel": 0
     },
     {
@@ -6198,7 +6198,7 @@
       "channel": 0
     },
     {
-      "time": 53.023438,
+      "time": 53.023437,
       "midi_number": 49,
       "note_name": "C#3",
       "velocity": 58,
@@ -6214,11 +6214,11 @@
       "channel": 0
     },
     {
-      "time": 53.226563,
+      "time": 53.226562,
       "midi_number": 48,
       "note_name": "C3",
       "velocity": 58,
-      "duration": 0.096354,
+      "duration": 0.096355,
       "channel": 0
     },
     {
@@ -6270,11 +6270,11 @@
       "channel": 0
     },
     {
-      "time": 53.601563,
+      "time": 53.601562,
       "midi_number": 57,
       "note_name": "A3",
       "velocity": 55,
-      "duration": 0.190104,
+      "duration": 0.190105,
       "channel": 0
     },
     {
@@ -6298,7 +6298,7 @@
       "midi_number": 75,
       "note_name": "D#5",
       "velocity": 55,
-      "duration": 0.33073,
+      "duration": 0.330729,
       "channel": 0
     },
     {
@@ -6326,11 +6326,11 @@
       "channel": 0
     },
     {
-      "time": 54.382813,
+      "time": 54.382812,
       "midi_number": 68,
       "note_name": "G#4",
       "velocity": 64,
-      "duration": 1.164062,
+      "duration": 1.164063,
       "channel": 0
     },
     {
@@ -6342,11 +6342,11 @@
       "channel": 0
     },
     {
-      "time": 54.585938,
+      "time": 54.585937,
       "midi_number": 61,
       "note_name": "C#4",
       "velocity": 59,
-      "duration": 0.132812,
+      "duration": 0.132813,
       "channel": 0
     },
     {
@@ -6390,11 +6390,11 @@
       "channel": 0
     },
     {
-      "time": 55.148438,
+      "time": 55.148437,
       "midi_number": 49,
       "note_name": "C#3",
       "velocity": 56,
-      "duration": 0.148437,
+      "duration": 0.148438,
       "channel": 0
     },
     {
@@ -6430,11 +6430,11 @@
       "channel": 0
     },
     {
-      "time": 55.601563,
+      "time": 55.601562,
       "midi_number": 49,
       "note_name": "C#3",
       "velocity": 54,
-      "duration": 0.166666,
+      "duration": 0.166667,
       "channel": 0
     },
     {
@@ -6474,7 +6474,7 @@
       "midi_number": 52,
       "note_name": "E3",
       "velocity": 60,
-      "duration": 0.179688,
+      "duration": 0.179687,
       "channel": 0
     },
     {
@@ -6514,7 +6514,7 @@
       "midi_number": 36,
       "note_name": "C2",
       "velocity": 61,
-      "duration": 0.585938,
+      "duration": 0.585937,
       "channel": 0
     },
     {
@@ -6530,7 +6530,7 @@
       "midi_number": 75,
       "note_name": "D#5",
       "velocity": 64,
-      "duration": 1.151042,
+      "duration": 1.151041,
       "channel": 0
     },
     {
@@ -6550,11 +6550,11 @@
       "channel": 0
     },
     {
-      "time": 56.414063,
+      "time": 56.414062,
       "midi_number": 63,
       "note_name": "D#4",
       "velocity": 60,
-      "duration": 0.174479,
+      "duration": 0.17448,
       "channel": 0
     },
     {
@@ -6574,11 +6574,11 @@
       "channel": 0
     },
     {
-      "time": 56.726563,
+      "time": 56.726562,
       "midi_number": 57,
       "note_name": "A3",
       "velocity": 66,
-      "duration": 0.10677,
+      "duration": 0.106771,
       "channel": 0
     },
     {
@@ -6590,11 +6590,11 @@
       "channel": 0
     },
     {
-      "time": 56.992188,
+      "time": 56.992187,
       "midi_number": 52,
       "note_name": "E3",
       "velocity": 64,
-      "duration": 0.145833,
+      "duration": 0.145834,
       "channel": 0
     },
     {
@@ -6610,7 +6610,7 @@
       "midi_number": 49,
       "note_name": "C#3",
       "velocity": 63,
-      "duration": 0.132813,
+      "duration": 0.132812,
       "channel": 0
     },
     {
@@ -6634,7 +6634,7 @@
       "midi_number": 43,
       "note_name": "G2",
       "velocity": 61,
-      "duration": 0.151042,
+      "duration": 0.151041,
       "channel": 0
     },
     {
@@ -6738,7 +6738,7 @@
       "midi_number": 80,
       "note_name": "G#5",
       "velocity": 76,
-      "duration": 0.408855,
+      "duration": 0.408854,
       "channel": 0
     },
     {
@@ -6746,15 +6746,15 @@
       "midi_number": 77,
       "note_name": "F5",
       "velocity": 75,
-      "duration": 0.408855,
+      "duration": 0.408854,
       "channel": 0
     },
     {
-      "time": 58.367188,
+      "time": 58.367187,
       "midi_number": 65,
       "note_name": "F4",
       "velocity": 69,
-      "duration": 0.184895,
+      "duration": 0.184896,
       "channel": 0
     },
     {
@@ -6774,27 +6774,27 @@
       "channel": 0
     },
     {
-      "time": 58.679688,
+      "time": 58.679687,
       "midi_number": 59,
       "note_name": "B3",
       "velocity": 72,
-      "duration": 0.143229,
+      "duration": 0.14323,
       "channel": 0
     },
     {
-      "time": 58.773438,
+      "time": 58.773437,
       "midi_number": 82,
       "note_name": "A#5",
       "velocity": 68,
-      "duration": 0.643229,
+      "duration": 0.64323,
       "channel": 0
     },
     {
-      "time": 58.773438,
+      "time": 58.773437,
       "midi_number": 77,
       "note_name": "F5",
       "velocity": 72,
-      "duration": 0.648437,
+      "duration": 0.648438,
       "channel": 0
     },
     {
@@ -6834,7 +6834,7 @@
       "midi_number": 54,
       "note_name": "F#3",
       "velocity": 65,
-      "duration": 0.135417,
+      "duration": 0.135416,
       "channel": 0
     },
     {
@@ -6874,7 +6874,7 @@
       "midi_number": 45,
       "note_name": "A2",
       "velocity": 69,
-      "duration": 0.161459,
+      "duration": 0.161458,
       "channel": 0
     },
     {
@@ -6898,7 +6898,7 @@
       "midi_number": 77,
       "note_name": "F5",
       "velocity": 82,
-      "duration": 0.445313,
+      "duration": 0.445312,
       "channel": 0
     },
     {
@@ -7218,7 +7218,7 @@
       "midi_number": 36,
       "note_name": "C2",
       "velocity": 74,
-      "duration": 0.161459,
+      "duration": 0.161458,
       "channel": 0
     },
     {
@@ -7246,19 +7246,19 @@
       "channel": 0
     },
     {
-      "time": 63.898438,
+      "time": 63.898437,
       "midi_number": 32,
       "note_name": "G#1",
       "velocity": 72,
-      "duration": 0.25,
+      "duration": 0.250001,
       "channel": 0
     },
     {
-      "time": 64.164063,
+      "time": 64.164062,
       "midi_number": 31,
       "note_name": "G1",
       "velocity": 74,
-      "duration": 0.307291,
+      "duration": 0.307292,
       "channel": 0
     },
     {
@@ -7490,7 +7490,7 @@
       "midi_number": 82,
       "note_name": "A#5",
       "velocity": 82,
-      "duration": 0.914063,
+      "duration": 0.914062,
       "channel": 0
     },
     {
@@ -7506,7 +7506,7 @@
       "midi_number": 65,
       "note_name": "F4",
       "velocity": 70,
-      "duration": 0.817709,
+      "duration": 0.817708,
       "channel": 0
     },
     {
@@ -7522,7 +7522,7 @@
       "midi_number": 56,
       "note_name": "G#3",
       "velocity": 74,
-      "duration": 0.632813,
+      "duration": 0.632812,
       "channel": 0
     },
     {
@@ -7658,15 +7658,15 @@
       "midi_number": 36,
       "note_name": "C2",
       "velocity": 67,
-      "duration": 1.007813,
+      "duration": 1.007812,
       "channel": 0
     },
     {
-      "time": 68.085938,
+      "time": 68.085937,
       "midi_number": 41,
       "note_name": "F2",
       "velocity": 68,
-      "duration": 0.914062,
+      "duration": 0.914063,
       "channel": 0
     },
     {
@@ -7694,11 +7694,11 @@
       "channel": 0
     },
     {
-      "time": 68.445313,
+      "time": 68.445312,
       "midi_number": 53,
       "note_name": "F3",
       "velocity": 70,
-      "duration": 0.557291,
+      "duration": 0.557292,
       "channel": 0
     },
     {
@@ -7726,11 +7726,11 @@
       "channel": 0
     },
     {
-      "time": 68.617188,
+      "time": 68.617187,
       "midi_number": 89,
       "note_name": "F6",
       "velocity": 69,
-      "duration": 0.427083,
+      "duration": 0.427084,
       "channel": 0
     },
     {
@@ -7766,27 +7766,27 @@
       "channel": 0
     },
     {
-      "time": 69.023438,
+      "time": 69.023437,
       "midi_number": 68,
       "note_name": "G#4",
       "velocity": 71,
-      "duration": 0.148437,
+      "duration": 0.148438,
       "channel": 0
     },
     {
-      "time": 69.023438,
+      "time": 69.023437,
       "midi_number": 77,
       "note_name": "F5",
       "velocity": 74,
-      "duration": 0.351562,
+      "duration": 0.351563,
       "channel": 0
     },
     {
-      "time": 69.023438,
+      "time": 69.023437,
       "midi_number": 72,
       "note_name": "C5",
       "velocity": 74,
-      "duration": 0.361979,
+      "duration": 0.36198,
       "channel": 0
     },
     {

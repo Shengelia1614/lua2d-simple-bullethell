@@ -241,14 +241,16 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='Convert MIDI files to JSON format')
-    parser.add_argument('input', nargs='?', help='Input MIDI file or directory', default="../notes/midi/prelude-in-c-sharp-minor-opus-3-no-2-sergei-rachmaninoff.mid")
+    parser.add_argument('input', nargs='?', help='Input MIDI file or directory', default="../notes/midi/")
     parser.add_argument('-o', '--output', help='Output JSON file or directory', default="../notes/note_data/")
     parser.add_argument('-b', '--batch', action='store_true', 
                         help='Process all MIDI files in input directory')
     
     args = parser.parse_args()
     
-    if args.batch:
+    # Check if input is a directory - if so, automatically use batch mode
+    input_path = Path(args.input)
+    if input_path.is_dir() or args.batch:
         batch_convert(args.input, args.output)
     else:
         midi_to_json(args.input, args.output)
