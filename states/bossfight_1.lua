@@ -109,7 +109,7 @@ function BossBullet.loadSprites()
     BossBullet.animationSets = {{1, 2, 3, 4, 5}, {6, 7, 8, 9, 10}, {11, 12, 13, 14, 15}, {16, 17, 18, 19, 20}}
 end
 
-function BossBullet.new(x, y, targetX, targetY, midi)
+function BossBullet.new(x, y, targetX, targetY, midi, velocity, colorscheme)
     BossBullet.loadSprites()
 
     local self = setmetatable({}, BossBullet)
@@ -128,7 +128,7 @@ function BossBullet.new(x, y, targetX, targetY, midi)
 
     -- Base speed scaled by MIDI (50% to 100%)
     local baseSpeed = 80
-    self.speed = baseSpeed * scaleFactor
+    self.speed = (baseSpeed * scaleFactor) * (velocity / 127)
 
     -- Arc parameters based on MIDI (unclamped for more dramatic arcs)
     -- Higher MIDI = bigger arc
@@ -155,6 +155,21 @@ function BossBullet.new(x, y, targetX, targetY, midi)
     self.perpX = -dy -- perpendicular to initial direction
     self.perpY = dx
 
+    -- set colour: vary brightness and saturation based on midi/velocity
+    -- colorscheme is a base hue (0-360 degrees)
+    local hue = colorscheme / 360.0 -- normalize to 0-1 range
+
+    -- Saturation varies with MIDI pitch (higher pitch = more saturated)
+    local saturation = 0.4 + (midi / 128) * 0.6 -- range: 0.4 to 1.0
+
+    -- Brightness/value varies with velocity (louder = brighter)
+    local value = 0.5 + (velocity / 127) * 0.5 -- range: 0.5 to 1.0
+
+    -- Alpha based on velocity
+    local alpha = 0.6 + (velocity / 127) * 0.4
+
+    -- Convert HSV to RGB
+    self.color = self:hsvToRgb(hue, saturation, value, alpha)
     -- Set initial velocity
     self.vx = dx * self.speed
     self.vy = dy * self.speed
@@ -176,6 +191,34 @@ function BossBullet.new(x, y, targetX, targetY, midi)
     self.scale = 2.7 * scaleFactor -- scale visual size too
 
     return self
+end
+
+function BossBullet:hsvToRgb(h, s, v, a)
+    local r, g, b
+
+    local i = math.floor(h * 6)
+    local f = h * 6 - i
+    local p = v * (1 - s)
+    local q = v * (1 - f * s)
+    local t = v * (1 - (1 - f) * s)
+
+    i = i % 6
+
+    if i == 0 then
+        r, g, b = v, t, p
+    elseif i == 1 then
+        r, g, b = q, v, p
+    elseif i == 2 then
+        r, g, b = p, v, t
+    elseif i == 3 then
+        r, g, b = p, q, v
+    elseif i == 4 then
+        r, g, b = t, p, v
+    elseif i == 5 then
+        r, g, b = v, p, q
+    end
+
+    return {r, g, b, a or 1}
 end
 
 function BossBullet:update(dt, gameWidth, gameHeight, playerX, playerY)
@@ -286,7 +329,7 @@ function BossBullet:draw()
         local scaleY = targetSize / spriteHeight
         local finalScale = math.min(scaleX, scaleY)
 
-        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.setColor(self.color[1], self.color[2], self.color[3], self.color[4])
         love.graphics.draw(sprite, centerX, centerY, 0, finalScale, finalScale, spriteWidth / 2, spriteHeight / 2)
     else
         love.graphics.setColor(1, 0, 0)
@@ -318,6 +361,11 @@ function BossFight1State:enter()
     -- Load note data
     self.noteEvents = {}
     local fileContents = love.filesystem.read(notePath)
+
+    -- Choose color scheme for this bossfight: random hue (0-360 degrees)
+    -- Examples: 0=red, 60=yellow, 120=green, 180=cyan, 240=blue, 300=magenta
+    self.colorscheme = love.math.random(0, 360)
+    print("Color scheme hue: " .. self.colorscheme .. "°")
 
     if fileContents then
         local data, err = decodeJSON(fileContents)
@@ -393,7 +441,7 @@ function BossFight1State:update(dt)
             local playerY = self.player.y + self.player.height / 2
 
             -- Create bullet with MIDI-based properties
-            local bullet = BossBullet.new(bossX, bossY, playerX, playerY, event.midi)
+            local bullet = BossBullet.new(bossX, bossY, playerX, playerY, event.midi, event.velocity, self.colorscheme)
 
             -- Add bullet to active bullets list
             table.insert(self.bullets, bullet)
