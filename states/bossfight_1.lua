@@ -336,7 +336,7 @@ function BossFight1State:enter()
     -- (prevents runtime errors such as "attempt to call a number value").
     self.notes = {}
     for i = 21, 108 do
-        self.notes[i] = love.audio.newSource("notes/keys/" .. tostring(i - 20) .. ".mp3", "stream")
+        self.notes[i] = love.audio.newSource("notes/keys/" .. tostring(i - 20) .. ".mp3", "static")
         self.notes[i]:setLooping(false)
     end
 
@@ -407,7 +407,6 @@ function BossFight1State:update(dt)
 
             self.notes[event.midi]:setVolume(event.velocity / 127)
             self.notes[event.midi]:stop()
-
             self.notes[event.midi]:play()
 
             self.currentEventIndex = self.currentEventIndex + 1
