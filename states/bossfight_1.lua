@@ -7,6 +7,21 @@ local BossFight1State = {}
 
 local VIRTUAL_WIDTH, VIRTUAL_HEIGHT = 1280, 720
 
+-- Piano visualization settings
+local PIANO_KEYS = 88 -- Standard piano (MIDI 21-108)
+local PIANO_WIDTH = VIRTUAL_WIDTH * 0.3 -- 30% of screen width
+local WHITE_KEY_HEIGHT = 50 -- Height of white keys
+local BLACK_KEY_HEIGHT = 32 -- Height of black keys (shorter)
+local PIANO_Y = 20 -- Y position (top of screen)
+local PIANO_ARCH_DEPTH = 80 -- How deep the arch curves downward
+
+-- Piano key pattern: true = white key, false = black key
+-- Pattern repeats every 12 semitones: C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+local KEY_PATTERN = {true, false, true, false, true, true, false, true, false, true, false, true}
+
+-- Boss behavior mode toggle
+local BOSS_MODE_PIANO_SPREAD = true -- false = target player with shotgun, true = spread across piano arch
+
 local function decodeJSON(str)
     -- Remove whitespace to simplify simple pattern searches (keeps parser small and dependency-free)
     str = str:gsub("%s+", "")
@@ -191,7 +206,7 @@ function BossBullet.new(x, y, targetX, targetY, midi, velocity, colorscheme)
     -- self.arcSpeed = 0.8 -- how fast we traverse the arc
 
     self.active = true
-    self.maxBounces = 1
+    self.maxBounces = 4
     self.bounceCount = 0
 
     -- animation
@@ -438,9 +453,13 @@ function BossFight1State:enter()
 
     -- Initialize boss enemy at top middle of screen with slow movement
     local bossX = VIRTUAL_WIDTH / 2 - 30 -- center horizontally (60 is enemy width)
-    local bossY = 50 -- top of screen with some padding
+    local bossY = 10 -- top of screen with some padding
     -- Slow movement: 0.4x normal speed (normal is vx=150, vy=100)
     self.boss = Enemy.new(bossX, bossY, 60, 40)
+
+    -- Store initial boss position for piano spread mode
+    self.bossInitialX = bossX + 30 -- center of boss (width/2)
+    self.bossInitialY = bossY + 20 -- center of boss (height/2)
 
     self.barrier = Barrier.new(self.player)
     self.bullets = {}
@@ -453,6 +472,17 @@ function BossFight1State:enter()
     -- Track recent bullet spawn times for shotgun spread effect
     self.lastBulletTime = -999
     self.bulletClusterCount = 0
+
+    -- Piano visualization: track active keys with fade-out effect
+    -- Each key stores {active = bool, fadeTimer = number}
+    self.pianoKeys = {}
+    for i = 1, PIANO_KEYS do
+        self.pianoKeys[i] = {
+            active = false,
+            fadeTimer = 0,
+            fadeDuration = 0.3 -- How long the key stays lit after being pressed
+        }
+    end
 end
 
 function BossFight1State:update(dt)
@@ -462,8 +492,14 @@ function BossFight1State:update(dt)
     -- Update player
     self.player:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
 
-    -- Update boss (slow movement)
-    self.boss:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
+    -- Update boss only in player-targeting mode
+    if not BOSS_MODE_PIANO_SPREAD then
+        self.boss:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
+    else
+        -- Keep boss stationary in piano spread mode
+        self.boss.x = self.bossInitialX - 30
+        self.boss.y = self.bossInitialY - 20
+    end
 
     -- Update barrier
     self.barrier:update(dt)
@@ -493,54 +529,84 @@ function BossFight1State:update(dt)
             local playerX = self.player.x + self.player.width / 2
             local playerY = self.player.y + self.player.height / 2
 
-            -- Shotgun spread effect: if bullets are spawned within 0.5s of each other
-            local spreadAngle = 0
-            local timeSinceLastBullet = event.time - self.lastBulletTime
+            local dx, dy, targetX, targetY
 
-            if timeSinceLastBullet <= 0.5 then
-                -- Part of a cluster - apply spread
-                self.bulletClusterCount = self.bulletClusterCount + 1
+            if BOSS_MODE_PIANO_SPREAD then
+                -- Piano spread mode: shoot in direction based on note position (1-88)
+                -- Map MIDI note (21-108) to angle spread (150 degrees total, centered downward)
+                -- Angles: -75° to +75° from vertical (90° is straight down)
 
-                -- Spread pattern: alternate left/right with increasing angle
-                -- Max spread of ±30 degrees (±0.52 radians)
-                local maxSpread = math.pi / 6 -- 30 degrees
-                local spreadIndex = math.floor(self.bulletClusterCount / 2)
-                local spreadSide = (self.bulletClusterCount % 2 == 0) and 1 or -1
+                local noteIndex = event.midi - 20 -- Convert MIDI (21-108) to index (1-88)
+                local normalizedPos = (noteIndex - 1) / (PIANO_KEYS - 1) -- 0 to 1
 
-                spreadAngle = spreadSide * (spreadIndex * 0.15) -- 0.15 radians (~8.6 degrees) per step
-                spreadAngle = math.max(-maxSpread, math.min(maxSpread, spreadAngle))
+                -- Map to angle: -75° to +75° (150° spread)
+                -- Center is straight down (90° in standard coords, or PI/2 radians)
+                -- REVERSED: lower notes (left) should shoot left, higher notes (right) should shoot right
+                local spreadDegrees = 180
+                local minAngle = 90 - (spreadDegrees / 2) -- 15°
+                local maxAngle = 90 + (spreadDegrees / 2) -- 165°
+
+                -- Reverse the mapping: 0 -> maxAngle (165°, left), 1 -> minAngle (15°, right)
+                local angleDegrees = maxAngle - normalizedPos * spreadDegrees
+                local angleRadians = math.rad(angleDegrees)
+
+                -- Convert angle to direction vector
+                dx = math.cos(angleRadians)
+                dy = math.sin(angleRadians)
+
+                -- Calculate target position
+                targetX = bossX + dx * 1000
+                targetY = bossY + dy * 1000
             else
-                -- New cluster - reset counter
-                self.bulletClusterCount = 0
-                spreadAngle = 0
+                -- Player-targeting mode with shotgun spread
+                local spreadAngle = 0
+                local timeSinceLastBullet = event.time - self.lastBulletTime
+
+                if timeSinceLastBullet <= 0.5 then
+                    -- Part of a cluster - apply spread
+                    self.bulletClusterCount = self.bulletClusterCount + 1
+
+                    -- Spread pattern: alternate left/right with increasing angle
+                    -- Max spread of ±30 degrees (±0.52 radians)
+                    local maxSpread = math.pi / 6 -- 30 degrees
+                    local spreadIndex = math.floor(self.bulletClusterCount / 2)
+                    local spreadSide = (self.bulletClusterCount % 2 == 0) and 1 or -1
+
+                    spreadAngle = spreadSide * (spreadIndex * 0.15) -- 0.15 radians (~8.6 degrees) per step
+                    spreadAngle = math.max(-maxSpread, math.min(maxSpread, spreadAngle))
+                else
+                    -- New cluster - reset counter
+                    self.bulletClusterCount = 0
+                    spreadAngle = 0
+                end
+
+                self.lastBulletTime = event.time
+
+                -- Calculate direction to player
+                dx = playerX - bossX
+                dy = playerY - bossY
+                local distance = math.sqrt(dx * dx + dy * dy)
+
+                -- Normalize
+                if distance > 0 then
+                    dx = dx / distance
+                    dy = dy / distance
+                end
+
+                -- Apply spread rotation
+                if spreadAngle ~= 0 then
+                    local cos_angle = math.cos(spreadAngle)
+                    local sin_angle = math.sin(spreadAngle)
+                    local newDx = dx * cos_angle - dy * sin_angle
+                    local newDy = dx * sin_angle + dy * cos_angle
+                    dx = newDx
+                    dy = newDy
+                end
+
+                -- Calculate target position for bullet constructor
+                targetX = bossX + dx * 1000 -- project forward
+                targetY = bossY + dy * 1000
             end
-
-            self.lastBulletTime = event.time
-
-            -- Calculate direction to player
-            local dx = playerX - bossX
-            local dy = playerY - bossY
-            local distance = math.sqrt(dx * dx + dy * dy)
-
-            -- Normalize
-            if distance > 0 then
-                dx = dx / distance
-                dy = dy / distance
-            end
-
-            -- Apply spread rotation
-            if spreadAngle ~= 0 then
-                local cos_angle = math.cos(spreadAngle)
-                local sin_angle = math.sin(spreadAngle)
-                local newDx = dx * cos_angle - dy * sin_angle
-                local newDy = dx * sin_angle + dy * cos_angle
-                dx = newDx
-                dy = newDy
-            end
-
-            -- Calculate target position for bullet constructor
-            local targetX = bossX + dx * 1000 -- project forward
-            local targetY = bossY + dy * 1000
 
             -- Create bullet with MIDI-based properties
             local bullet = BossBullet.new(bossX, bossY, targetX, targetY, event.midi, event.velocity, self.colorscheme)
@@ -559,10 +625,29 @@ function BossFight1State:update(dt)
             self.notes[event.midi]:stop()
             self.notes[event.midi]:play()
 
+            -- Activate piano key visualization
+            -- MIDI notes 21-108 map to piano keys 1-88
+            local keyIndex = event.midi - 20 -- Convert MIDI (21-108) to key index (1-88)
+            if keyIndex >= 1 and keyIndex <= PIANO_KEYS then
+                self.pianoKeys[keyIndex].active = true
+                self.pianoKeys[keyIndex].fadeTimer = self.pianoKeys[keyIndex].fadeDuration
+            end
+
             self.currentEventIndex = self.currentEventIndex + 1
         else
             -- Haven't reached the time for this event yet, stop checking
             break
+        end
+    end
+
+    -- Update piano key fade timers
+    for i = 1, PIANO_KEYS do
+        if self.pianoKeys[i].fadeTimer > 0 then
+            self.pianoKeys[i].fadeTimer = self.pianoKeys[i].fadeTimer - dt
+            if self.pianoKeys[i].fadeTimer <= 0 then
+                self.pianoKeys[i].active = false
+                self.pianoKeys[i].fadeTimer = 0
+            end
         end
     end
 
@@ -630,6 +715,144 @@ function BossFight1State:draw()
     love.graphics.print('WASD/Arrows to move, SPACE for barrier', 10, 50)
     love.graphics.print('Barrier Uses: ' .. self.barrier:getUsesRemaining(), 10, 70)
     love.graphics.print('Notes: ' .. self.currentEventIndex .. '/' .. #self.noteEvents, 10, 90)
+
+    -- Draw piano visualization last (top layer, above everything)
+    self:drawPiano()
+end
+
+function BossFight1State:drawPiano()
+    -- Calculate piano position (centered horizontally)
+    local pianoStartX = (VIRTUAL_WIDTH - PIANO_WIDTH) / 2
+
+    -- Count white keys to determine spacing
+    local whiteKeyCount = 0
+    for i = 1, PIANO_KEYS do
+        local noteInOctave = ((i + 8) % 12) + 1 -- MIDI 21 starts at A0, offset by 9 semitones from C
+        if KEY_PATTERN[noteInOctave] then
+            whiteKeyCount = whiteKeyCount + 1
+        end
+    end
+
+    local whiteKeyWidth = PIANO_WIDTH / whiteKeyCount
+    local blackKeyWidth = whiteKeyWidth * 0.6 -- Black keys are narrower
+
+    -- First pass: Draw all white keys
+    local whiteKeyIndex = 0
+    for i = 1, PIANO_KEYS do
+        local noteInOctave = ((i + 8) % 12) + 1 -- MIDI 21 (A0) offset
+
+        if KEY_PATTERN[noteInOctave] then
+            -- Calculate X position for this white key
+            local keyX = pianoStartX + whiteKeyIndex * whiteKeyWidth
+
+            -- Calculate normalized position for arch (0 to 1 across all white keys)
+            local normalizedPos = whiteKeyIndex / (whiteKeyCount - 1)
+
+            -- Calculate Y position using arch curve (downward parabola)
+            local archOffset = -PIANO_ARCH_DEPTH * 4 * math.pow(normalizedPos - 0.5, 2)
+            local keyY = PIANO_Y + PIANO_ARCH_DEPTH + archOffset
+
+            -- Determine key color based on active state
+            local key = self.pianoKeys[i]
+
+            if key.active and key.fadeTimer > 0 then
+                -- Active white key: use color scheme
+                local alpha = key.fadeTimer / key.fadeDuration
+                local hue = self.colorscheme / 360.0
+                local r, g, b = self:hsvToRgb(hue, 0.7, 1.0)
+                love.graphics.setColor(r, g, b, alpha)
+            else
+                -- Inactive white key: light gray
+                love.graphics.setColor(0.9, 0.9, 0.9, 1.0)
+            end
+
+            -- Draw white key
+            love.graphics.rectangle('fill', keyX, keyY, whiteKeyWidth - 2, WHITE_KEY_HEIGHT)
+
+            -- Draw outline (thin border)
+            love.graphics.setColor(0.1, 0.1, 0.1, 1.0)
+            love.graphics.setLineWidth(0.5)
+            love.graphics.rectangle('line', keyX, keyY, whiteKeyWidth - 2, WHITE_KEY_HEIGHT)
+
+            whiteKeyIndex = whiteKeyIndex + 1
+        end
+    end
+
+    -- Second pass: Draw all black keys (on top of white keys)
+    whiteKeyIndex = 0
+    for i = 1, PIANO_KEYS do
+        local noteInOctave = ((i + 8) % 12) + 1
+
+        -- Track white key position for black key placement
+        if KEY_PATTERN[noteInOctave] then
+            whiteKeyIndex = whiteKeyIndex + 1
+        else
+            -- Black key: positioned between white keys
+            -- Place it offset from the previous white key
+            local keyX = pianoStartX + (whiteKeyIndex - 0.5) * whiteKeyWidth - blackKeyWidth / 2
+
+            -- Use the same normalized position as nearby white key for arch
+            local normalizedPos = (whiteKeyIndex - 0.5) / (whiteKeyCount - 1)
+            normalizedPos = math.max(0, math.min(1, normalizedPos))
+
+            local archOffset = -PIANO_ARCH_DEPTH * 4 * math.pow(normalizedPos - 0.5, 2)
+            local keyY = PIANO_Y + PIANO_ARCH_DEPTH + archOffset
+
+            -- Determine key color based on active state
+            local key = self.pianoKeys[i]
+
+            if key.active and key.fadeTimer > 0 then
+                -- Active black key: use color scheme with higher saturation
+                local alpha = key.fadeTimer / key.fadeDuration
+                local hue = self.colorscheme / 360.0
+                local r, g, b = self:hsvToRgb(hue, 0.9, 0.8)
+                love.graphics.setColor(r, g, b, alpha)
+            else
+                -- Inactive black key: dark gray/black
+                love.graphics.setColor(0.15, 0.15, 0.15, 1.0)
+            end
+
+            -- Draw black key (shorter than white keys)
+            love.graphics.rectangle('fill', keyX, keyY, blackKeyWidth, BLACK_KEY_HEIGHT)
+
+            -- Draw outline (thin border)
+            love.graphics.setColor(0.05, 0.05, 0.05, 1.0)
+            love.graphics.setLineWidth(0.5)
+            love.graphics.rectangle('line', keyX, keyY, blackKeyWidth, BLACK_KEY_HEIGHT)
+        end
+    end
+
+    -- Reset line width to default
+    love.graphics.setLineWidth(1)
+    love.graphics.setColor(1, 1, 1)
+end
+
+function BossFight1State:hsvToRgb(h, s, v)
+    local r, g, b
+
+    local i = math.floor(h * 6)
+    local f = h * 6 - i
+    local p = v * (1 - s)
+    local q = v * (1 - f * s)
+    local t = v * (1 - (1 - f) * s)
+
+    i = i % 6
+
+    if i == 0 then
+        r, g, b = v, t, p
+    elseif i == 1 then
+        r, g, b = q, v, p
+    elseif i == 2 then
+        r, g, b = p, v, t
+    elseif i == 3 then
+        r, g, b = p, q, v
+    elseif i == 4 then
+        r, g, b = t, p, v
+    elseif i == 5 then
+        r, g, b = v, p, q
+    end
+
+    return r, g, b
 end
 
 function BossFight1State:exit()
