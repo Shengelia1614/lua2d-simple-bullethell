@@ -142,7 +142,7 @@ function BossBullet.new(x, y, targetX, targetY, midi, velocity, colorscheme)
     self.height = baseSize * scaleFactor
 
     -- Base speed scaled by MIDI
-    local baseSpeed = 80
+    local baseSpeed = 130
     self.baseSpeed = baseSpeed * scaleFactor
     self.speed = self.baseSpeed
 
