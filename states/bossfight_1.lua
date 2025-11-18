@@ -248,6 +248,45 @@ function BossBullet:hsvToRgb(h, s, v, a)
     return {r, g, b, a or 1}
 end
 
+function BossBullet:homing(px, py, dt)
+    -- Homing: rotate current velocity toward the player by a limited amount per second.
+    -- Accepts dt so rotation is frame-rate independent.
+    local toPlayerX = px - self.x
+    local toPlayerY = py - self.y
+
+    -- current angle and desired angle (radians)
+    local angleCurr = math.atan2(self.vy, self.vx)
+    local angleTarget = math.atan2(toPlayerY, toPlayerX)
+
+    -- Compute smallest difference between angles, normalized to [-pi, pi]
+    local delta = angleTarget - angleCurr
+    while delta > math.pi do
+        delta = delta - 2 * math.pi
+    end
+    while delta < -math.pi do
+        delta = delta + 2 * math.pi
+    end
+
+    -- Maximum turn rate (radians per second). Tweak this value to change homing responsiveness.
+    local maxTurnRate = math.rad(40) -- 90 degrees per second by default
+    local maxTurn = maxTurnRate * (dt or 1)
+
+    -- Clamp delta to maxTurn so we rotate smoothly
+    if delta > maxTurn then
+        delta = maxTurn
+    elseif delta < -maxTurn then
+        delta = -maxTurn
+    end
+
+    -- Compute new angle and preserve speed magnitude
+    local newAngle = angleCurr + delta
+    local speed = math.sqrt(self.vx * self.vx + self.vy * self.vy)
+    if speed > 0 then
+        self.vx = math.cos(newAngle) * speed
+        self.vy = math.sin(newAngle) * speed
+    end
+end
+
 function BossBullet:update(dt, gameWidth, gameHeight, playerX, playerY)
     if not self.active then
         return
@@ -289,6 +328,9 @@ function BossBullet:update(dt, gameWidth, gameHeight, playerX, playerY)
         end
     end
 
+    if self.bounceCount == 0 then
+        self:homing(playerX, playerY, dt)
+    end
     -- DISABLED: Arc movement (keeping for reference)
     -- Update arc progress
     -- self.arcProgress = self.arcProgress + self.arcSpeed * dt
@@ -654,7 +696,7 @@ function BossFight1State:update(dt)
     -- Update bullets
     for i = #self.bullets, 1, -1 do
         local bullet = self.bullets[i]
-        bullet:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
+        bullet:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, self.player.x, self.player.y)
 
         -- check barrier collision for bullets
         if self.barrier:isActive() then
