@@ -206,7 +206,7 @@ function BossBullet.new(x, y, targetX, targetY, midi, velocity, colorscheme)
     -- self.arcSpeed = 0.8 -- how fast we traverse the arc
 
     self.active = true
-    self.maxBounces = 4
+    self.maxBounces = 3
     self.bounceCount = 0
 
     -- animation
@@ -248,11 +248,39 @@ function BossBullet:hsvToRgb(h, s, v, a)
     return {r, g, b, a or 1}
 end
 
-function BossBullet:homing(px, py, dt)
+function BossBullet:homing(px, py, dt, ex, ey)
     -- Homing: rotate current velocity toward the player by a limited amount per second.
     -- Accepts dt so rotation is frame-rate independent.
     local toPlayerX = px - self.x
     local toPlayerY = py - self.y
+
+    local toEnemyX = ex - px
+    local toEnemyY = ey - py
+
+    local pte_distance = math.sqrt(toEnemyX * toEnemyX + toEnemyY * toEnemyY)
+
+    maxX = VIRTUAL_WIDTH - ex
+    maxY = VIRTUAL_HEIGHT - ey
+
+    local largest_distance = math.sqrt((maxX * maxX) + (maxY * maxY))
+
+    local distanceRatio = pte_distance / largest_distance
+
+    -- Use a power curve so homing is almost negligible at long range
+    -- but becomes rapidly stronger as the player gets very close.
+    -- proximity = 1 when player is on top of enemy, 0 when at "largest_distance" or beyond.
+    local proximity = 1 - math.min(1, math.max(0, distanceRatio))
+
+    -- Tweakable parameters:
+    local baseTurnDeg = 5 -- minimal base turn (degrees) when far away
+    local maxExtraDeg = 175 -- additional degrees available when extremely close
+    local exponent = 6 -- higher exponent -> much steeper curve near proximity=1
+
+    -- homingBoostDeg grows like proximity^exponent, so it's tiny until proximity is high
+    local homingBoostDeg = maxExtraDeg * math.pow(proximity, exponent)
+
+    -- Final max turn rate is base + boost, converted to radians/sec
+    local maxTurnRate = math.rad(baseTurnDeg + homingBoostDeg)
 
     -- current angle and desired angle (radians)
     local angleCurr = math.atan2(self.vy, self.vx)
@@ -267,8 +295,7 @@ function BossBullet:homing(px, py, dt)
         delta = delta + 2 * math.pi
     end
 
-    -- Maximum turn rate (radians per second). Tweak this value to change homing responsiveness.
-    local maxTurnRate = math.rad(40) -- 90 degrees per second by default
+    -- maxTurnRate computed above (in degrees converted to radians)
     local maxTurn = maxTurnRate * (dt or 1)
 
     -- Clamp delta to maxTurn so we rotate smoothly
@@ -287,7 +314,7 @@ function BossBullet:homing(px, py, dt)
     end
 end
 
-function BossBullet:update(dt, gameWidth, gameHeight, playerX, playerY)
+function BossBullet:update(dt, gameWidth, gameHeight, playerX, playerY, EnemyX, EnemyY)
     if not self.active then
         return
     end
@@ -329,7 +356,7 @@ function BossBullet:update(dt, gameWidth, gameHeight, playerX, playerY)
     end
 
     if self.bounceCount == 0 then
-        self:homing(playerX, playerY, dt)
+        self:homing(playerX, playerY, dt, EnemyX, EnemyY)
     end
     -- DISABLED: Arc movement (keeping for reference)
     -- Update arc progress
@@ -696,7 +723,7 @@ function BossFight1State:update(dt)
     -- Update bullets
     for i = #self.bullets, 1, -1 do
         local bullet = self.bullets[i]
-        bullet:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, self.player.x, self.player.y)
+        bullet:update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, self.player.x, self.player.y, self.boss.x, self.boss.y)
 
         -- check barrier collision for bullets
         if self.barrier:isActive() then
