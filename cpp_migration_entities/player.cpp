@@ -6,29 +6,21 @@
 #include "SFML/include/SFML/Graphics.hpp"
 #include "SFML/include/SFML/Window.hpp"
 #include "SFML/include/SFML/System.hpp"
+#include "generic_object.cpp"
 
-class player
+class player : public generic_object
 {
 private:
-    void load_sprites();
-
-    int current_frame = 0;
-    int animation_speed = 0.1;
-    float animation_timer = 0;
-    std::vector<sf::Sprite> animated_sprite;
-
 public:
-    player::player(int x, int y)
+    player::player(int x, int y, int w = 20, int h = 20, int base_speed = 200) : generic_object(x, y, w, h, "assets/player/")
     {
-        load_sprites();
-        position = std::make_pair(x, y);
+        this->base_speed = base_speed;
     }
 
-    std::pair<int, int> position;
-    int width;
-    int height;
-    int base_speed;
-    int current_speed;
+    ~player();
+
+    int base_speed = 200;
+    int current_speed = base_speed;
 
     sf::Sprite sprite;
 
@@ -39,28 +31,6 @@ public:
 
     // Player class implementation
 };
-
-void player::load_sprites()
-{
-    std::string base_path = "sprites/player/";
-    for (const auto &entry : std::filesystem::directory_iterator(base_path))
-    {
-        if (entry.path().extension() == ".png")
-        {
-            sf::Texture texture;
-            if (texture.loadFromFile(entry.path().string()))
-            {
-                sf::Sprite sprite;
-                sprite.setTexture(texture);
-                this->animated_sprite.push_back(sprite);
-            }
-            else
-            {
-                std::cerr << "Failed to load texture: " << entry.path().string() << "\n";
-            }
-        }
-    }
-}
 
 void player::update(float dt, int view_w, int view_h)
 {
@@ -89,6 +59,15 @@ void player::update(float dt, int view_w, int view_h)
         float magnitude = std::sqrt(dx * dx + dy * dy);
         dx = dx / magnitude;
         dy = dy / magnitude;
+    }
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
+    {
+        current_speed = base_speed * 0.5;
+    }
+    else
+    {
+        current_speed = base_speed;
     }
 
     position.first += dx * current_speed * dt;
