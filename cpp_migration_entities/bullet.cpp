@@ -8,6 +8,7 @@
 #include "SFML/include/SFML/Window.hpp"
 #include "SFML/include/SFML/System.hpp"
 #include "generic_object.cpp"
+#include <random>
 
 class bullet : public generic_object
 {
@@ -17,17 +18,27 @@ private:
     float saturation;
     float value;
     float alpha;
+    std::pair<int, int> *player_position;
+
+    int animationSet;
+    int animationSequence[8] = {1, 2, 3, 4, 5, 4, 3, 2};
+    int animationIndex = 1;
+    float animationTimer = 0;
+    float animationSpeed = 0.08;
+    float scale;
 
 public:
     std::pair<int, int> bullets;
 
-    bullet(int x, int y, int targetX, int targetY, int midi, int key_velocity, int colorscheme, int base_size = 10, int base_speed = 120, float velocity_decay_rate = 4) : generic_object(x, y, base_size, base_size, "assets/bullet/")
+    bullet(int x, int y, std::pair<int, int> *player_position, int midi, int key_velocity, int colorscheme, int base_size = 10, int base_speed = 120, float velocity_decay_rate = 4) : generic_object(x, y, base_size, base_size, "assets/bullet/")
     {
         this->speed = speed;
         this->base_size = base_size;
 
-        float dx = targetX - x;
-        float dy = targetY - y;
+        this->player_position = player_position;
+
+        float dx = player_position->first - x;
+        float dy = player_position->second - y;
         float distance = std::sqrt(dx * dx + dy * dy);
 
         // Normalize direction
@@ -56,9 +67,15 @@ public:
         this->alpha = 0.6 + (key_velocity / 127) * 0.4;
 
         float real_speed = this->speed + this->velocity_boost;
-        velocity.first = (targetX - x);
-        velocity.second = (targetY - y);
+        velocity.first = (real_speed * dx);
+        velocity.second = (real_speed * dy);
+
+        this->scale = 2.7 * scaleFactor;
+
+        this->animationSet = std::rand() % 4 + 1;
     }
+
+    void homing(float dt);
 
     ~bullet();
 
