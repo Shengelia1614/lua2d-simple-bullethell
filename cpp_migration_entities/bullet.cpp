@@ -9,6 +9,11 @@
 #include "SFML/include/SFML/System.hpp"
 #include "generic_object.cpp"
 #include <random>
+#include <algorithm>
+
+#define VIRTUAL_WIDTH 800
+#define VIRTUAL_HEIGHT 600
+constexpr float PI = 3.14159265358979323846f;
 
 class bullet : public generic_object
 {
@@ -75,7 +80,8 @@ public:
         this->animationSet = std::rand() % 4 + 1;
     }
 
-    void homing(float dt);
+    void homing(float dt, std::pair<int, int> *enemy_position);
+    void update(float dt);
 
     ~bullet();
 
@@ -88,3 +94,65 @@ public:
     float velocity_boost;
     float velocity_decay_rate;
 };
+
+void bullet::homing(float dt, std::pair<int, int> *enemy_position)
+{
+
+    std::pair<float, float> toPlayer = {player_position->first - this->position.first, player_position->second - this->position.second};
+    std::pair<float, float> toEnemy = {enemy_position->first - this->player_position->first, enemy_position->second - this->player_position->second};
+
+    float pte_distance = sqrt(toEnemy.first * toEnemy.first + toEnemy.second * toEnemy.second);
+
+    float maxX = VIRTUAL_WIDTH - enemy_position->first;
+    float maxY = VIRTUAL_HEIGHT - enemy_position->second;
+
+    float largest_distance = sqrt((maxX * maxX) + (maxY * maxY));
+
+    float distanceRatio = pte_distance / largest_distance;
+
+    float proximity = 1 - std::min(1.0f, std::max(0.0f, distanceRatio));
+
+    float baseTurnDeg = 5;
+    float maxExtraDeg = 175;
+    float exponent = 6;
+
+    float homingBoostDeg = maxExtraDeg * pow(proximity, exponent);
+
+    float maxTurnRate = (baseTurnDeg + homingBoostDeg) * (3.14159265f / 180.0f);
+
+    float angleCurr = atan2(this->velocity.second, this->velocity.first);
+    float angleTarget = atan2(toPlayer.second, toPlayer.first);
+
+    float delta = angleTarget - angleCurr;
+    while (delta > PI)
+    {
+        delta = delta - 2 * PI;
+    }
+    while (delta < -PI)
+    {
+        delta = delta + 2 * PI;
+    }
+
+    float maxTurn = maxTurnRate * (dt ? dt : 1);
+
+    if (delta > maxTurn)
+    {
+        delta = maxTurn;
+    }
+    else if (delta < -maxTurn)
+    {
+        delta = -maxTurn;
+    }
+
+    float newAngle = angleCurr + delta;
+    float speed = sqrt(this->velocity.first * this->velocity.first + this->velocity.second * this->velocity.second);
+    if (speed > 0)
+    {
+        this->velocity.first = cos(newAngle) * speed;
+        this->velocity.second = sin(newAngle) * speed;
+    }
+}
+
+void bullet::update(float dt)
+{
+}
