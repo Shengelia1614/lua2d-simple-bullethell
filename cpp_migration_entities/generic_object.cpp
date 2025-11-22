@@ -1,12 +1,14 @@
-
+#pragma once
 #include <utility>
 #include <iostream>
 #include <vector>
 #include <filesystem>
 #include <cmath>
-#include "SFML/include/SFML/Graphics.hpp"
-#include "SFML/include/SFML/Window.hpp"
-#include "SFML/include/SFML/System.hpp"
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
+
+sf::Texture default_error_texture = sf::Texture();
 
 class generic_object
 {
@@ -14,12 +16,13 @@ protected:
     void load_sprites(std::string sprite_folder);
 
     int current_frame = 0;
-    int animation_speed = 0.1;
+    float animation_speed = 0.1f; // was int
     float animation_timer = 0;
-    std::vector<sf::Sprite> animated_sprite;
+    std::vector<sf::Sprite> animated_sprite = {};
+    std::vector<sf::Texture> textures; // keep textures alive for sprites
 
 public:
-    generic_object::generic_object(int x, int y, int w, int h, std::string sprite_folder)
+    generic_object(int x, int y, int w, int h, std::string sprite_folder) // removed extra qualification
     {
         load_sprites(sprite_folder);
         position = std::make_pair(x, y);
@@ -27,13 +30,13 @@ public:
         height = h;
     }
 
-    ~generic_object();
+    ~generic_object() = default;
 
     std::pair<int, int> position;
     int width;
     int height;
 
-    sf::Sprite sprite;
+    sf::Sprite sprite = sf::Sprite(default_error_texture);
 
     std::pair<int, int> get_collision();
 
@@ -52,16 +55,16 @@ void generic_object::load_sprites(std::string sprite_folder)
     {
         if (entry.path().extension() == ".png")
         {
-            sf::Texture texture;
-            if (texture.loadFromFile(entry.path().string()))
+            this->textures.emplace_back();
+            if (this->textures.back().loadFromFile(entry.path().string()))
             {
-                sf::Sprite sprite;
-                sprite.setTexture(texture);
+                sf::Sprite sprite(this->textures.back());
                 this->animated_sprite.push_back(sprite);
             }
             else
             {
                 std::cerr << "Failed to load texture: " << entry.path().string() << "\n";
+                this->textures.pop_back();
             }
         }
     }

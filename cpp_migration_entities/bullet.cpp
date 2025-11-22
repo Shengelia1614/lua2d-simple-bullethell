@@ -1,19 +1,35 @@
+#pragma once
 
 #include <utility>
 #include <iostream>
 #include <vector>
 #include <filesystem>
 #include <cmath>
-#include "SFML/include/SFML/Graphics.hpp"
-#include "SFML/include/SFML/Window.hpp"
-#include "SFML/include/SFML/System.hpp"
+#include "SFML/Graphics.hpp"
+#include "SFML/Window.hpp"
+#include "SFML/System.hpp"
 #include "generic_object.cpp"
 #include <random>
 #include <algorithm>
+#include "main.cpp"
 
-#define VIRTUAL_WIDTH 800
-#define VIRTUAL_HEIGHT 600
+#define FRAME_COUNT 8
 constexpr float PI = 3.14159265358979323846f;
+
+void bullet_garbage_collector(std::vector<bullet *> &bullets)
+{
+    bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
+                                 [](bullet *b)
+                                 {
+                                     if (!b->active)
+                                     {
+                                         delete b;
+                                         return true;
+                                     }
+                                     return false;
+                                 }),
+                  bullets.end());
+}
 
 class bullet : public generic_object
 {
@@ -24,26 +40,42 @@ private:
     float value;
     float alpha;
     std::pair<int, int> *player_position;
+    std::pair<int, int> starting_player_position;
 
     int animationSet;
-    int animationSequence[8] = {1, 2, 3, 4, 5, 4, 3, 2};
+    int animationSequence[FRAME_COUNT] = {1, 2, 3, 4, 5, 4, 3, 2};
     int animationIndex = 1;
     float animationTimer = 0;
     float animationSpeed = 0.08;
     float scale;
 
-public:
-    std::pair<int, int> bullets;
+    int speed;
+    int base_size;
+    int base_speed;
+    int bounce_count = 0;
+    int max_bounces;
 
-    bullet(int x, int y, std::pair<int, int> *player_position, int midi, int key_velocity, int colorscheme, int base_size = 10, int base_speed = 120, float velocity_decay_rate = 4) : generic_object(x, y, base_size, base_size, "assets/bullet/")
+    std::pair<float, float> velocity;
+
+    float velocity_boost;
+    float velocity_decay_rate;
+
+    void homing(float dt, std::pair<int, int> *enemy_position);
+
+public:
+    bool active = true;
+
+    bullet(int x, int y, std::pair<int, int> *target, int midi, int key_velocity, int colorscheme, int max_bounces = 3, int base_size = 10, int base_speed = 120, float velocity_decay_rate = 4) : generic_object(x, y, base_size, base_size, "assets/bullet/")
     {
         this->speed = speed;
         this->base_size = base_size;
+        this->max_bounces = max_bounces;
 
-        this->player_position = player_position;
+        this->player_position = target;
+        this->starting_player_position = *target;
 
-        float dx = player_position->first - x;
-        float dy = player_position->second - y;
+        float dx = target->first - x;
+        float dy = target->second - y;
         float distance = std::sqrt(dx * dx + dy * dy);
 
         // Normalize direction
@@ -80,19 +112,13 @@ public:
         this->animationSet = std::rand() % 4 + 1;
     }
 
-    void homing(float dt, std::pair<int, int> *enemy_position);
-    void update(float dt);
+    void homeless_update(float dt);
+    void update(float dt, std::pair<int, int> enemy_position);
 
-    ~bullet();
-
-    int speed;
-    int base_size;
-    int base_speed;
-
-    std::pair<float, float> velocity;
-
-    float velocity_boost;
-    float velocity_decay_rate;
+    ~bullet()
+    {
+        delete player_position;
+    };
 };
 
 void bullet::homing(float dt, std::pair<int, int> *enemy_position)
@@ -118,7 +144,7 @@ void bullet::homing(float dt, std::pair<int, int> *enemy_position)
 
     float homingBoostDeg = maxExtraDeg * pow(proximity, exponent);
 
-    float maxTurnRate = (baseTurnDeg + homingBoostDeg) * (3.14159265f / 180.0f);
+    float maxTurnRate = (baseTurnDeg + homingBoostDeg) * (PI / 180.0f);
 
     float angleCurr = atan2(this->velocity.second, this->velocity.first);
     float angleTarget = atan2(toPlayer.second, toPlayer.first);
@@ -153,6 +179,100 @@ void bullet::homing(float dt, std::pair<int, int> *enemy_position)
     }
 }
 
-void bullet::update(float dt)
+void bullet::update(float dt, std::pair<int, int> enemy_position)
+{
+    if (!this->active)
+    {
+        return;
+    };
+
+    this->animationTimer = this->animationTimer + dt;
+    if (this->animationTimer >= this->animationSpeed)
+    {
+        this->animationTimer = this->animationTimer - this->animationSpeed;
+        this->animationIndex = this->animationIndex + 1;
+        if (this->animationIndex > FRAME_COUNT)
+        {
+            this->animationIndex = 1;
+        }
+    }
+
+    if (this->velocity_boost > 0)
+    {
+        this->velocity_life_time = this->velocity_life_time + dt;
+
+        float initialBoost = (this->base_speed);
+        this->velocity_boost = initialBoost * exp(-this->velocity_decay_rate * this->velocity_life_time);
+
+        if (this->velocity_boost < 0.5)
+        {
+            this->velocity_boost = 0;
+        }
+
+        this->speed = this->base_speed + this->velocity_boost;
+
+        float currentMag = sqrt(this->velocity.first * this->velocity.first + this->velocity.second * this->velocity.second);
+        if (currentMag > 0)
+        {
+            float dirX = this->velocity.first / currentMag;
+            float dirY = this->velocity.second / currentMag;
+            this->velocity.first = dirX * this->speed;
+            this->velocity.second = dirY * this->speed;
+        }
+    }
+
+    if (this->bounce_count == 0)
+    {
+        this->homing(dt, &enemy_position);
+    }
+
+    this->position.first = this->position.first + this->velocity.first * dt;
+    this->position.second = this->position.second + this->velocity.second * dt;
+    bool bounced = false;
+
+    if (this->position.first < 0)
+    {
+        this->position.first = 0;
+        this->velocity.first = std::abs(this->velocity.first);
+        bounced = true;
+    }
+    else if (this->position.first + this->width > VIRTUAL_WIDTH)
+    {
+        this->position.first = VIRTUAL_WIDTH - this->width;
+        this->velocity.first = -std::abs(this->velocity.first);
+        bounced = true;
+    }
+
+    if (this->position.second < 0)
+    {
+        this->position.second = 0;
+        this->velocity.second = std::abs(this->velocity.second);
+        bounced = true;
+    }
+    else if (this->position.second + this->height > VIRTUAL_HEIGHT)
+    {
+        this->position.second = VIRTUAL_HEIGHT - this->height;
+        this->velocity.second = -std::abs(this->velocity.second);
+        bounced = true;
+    }
+
+    if (bounced)
+    {
+        this->bounce_count = this->bounce_count + 1;
+        if (this->bounce_count > this->max_bounces)
+        {
+            this->active = false;
+        }
+        // float mag = sqrt(this->velocity.first * this->velocity.first + this->velocity.second * this->velocity.second);
+        // if (mag > 0) {
+        //     float normVx = this->velocity.first / mag;
+        //     float normVy = this->velocity.second / mag;
+        //     this->perpX = -normVy;
+        //     this->perpY = normVx;
+        // }
+    }
+}
+
+void bullet::homeless_update(float dt)
 {
 }

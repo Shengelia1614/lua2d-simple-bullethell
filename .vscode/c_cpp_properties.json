@@ -3,15 +3,25 @@
     {
       "name": "windows-gcc-x64",
       "includePath": [
-        "${workspaceFolder}/**"
+        "${workspaceFolder}/**",
+        "C:/msys64/mingw64/include",
+        "C:/msys64/mingw64/include/SFML"
       ],
-      "compilerPath": "gcc",
-      "cStandard": "${default}",
-      "cppStandard": "${default}",
+      "compilerPath": "C:/msys64/mingw64/bin/g++.exe",
+      "cStandard": "c11",
+      "cppStandard": "c++20",
       "intelliSenseMode": "windows-gcc-x64",
       "compilerArgs": [
-        ""
-      ]
+        "-std=gnu++20"
+      ],
+      "browse": {
+        "path": [
+          "${workspaceFolder}",
+          "C:/msys64/mingw64/include",
+          "C:/msys64/mingw64/include/SFML"
+        ],
+        "limitSymbolsToIncludedHeaders": false
+      }
     }
   ],
   "version": 4

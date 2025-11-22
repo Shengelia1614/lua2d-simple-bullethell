@@ -3,26 +3,24 @@
 #include <vector>
 #include <filesystem>
 #include <cmath>
-#include "SFML/include/SFML/Graphics.hpp"
-#include "SFML/include/SFML/Window.hpp"
-#include "SFML/include/SFML/System.hpp"
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
 #include "generic_object.cpp"
 
 class player : public generic_object
 {
 private:
 public:
-    player::player(int x, int y, int w = 20, int h = 20, int base_speed = 200) : generic_object(x, y, w, h, "assets/player/")
+    player(int x, int y, int w = 20, int h = 20, int base_speed = 5) : generic_object(x, y, w, h, "sprites/player/")
     {
         this->base_speed = base_speed;
     }
 
-    ~player();
+    ~player() = default;
 
-    int base_speed = 200;
+    int base_speed;
     int current_speed = base_speed;
-
-    sf::Sprite sprite;
 
     void update(float dt, int view_w, int view_h);
     void draw(sf::RenderWindow &window);
@@ -45,13 +43,13 @@ void player::update(float dt, int view_w, int view_h)
     int dx = 0;
     int dy = 0;
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
         dy = dy - 1;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
         dy = dy + 1;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
         dx = dx - 1;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
         dx = dx + 1;
 
     if (dx != 0 || dy != 0)
@@ -61,7 +59,7 @@ void player::update(float dt, int view_w, int view_h)
         dy = dy / magnitude;
     }
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift))
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift))
     {
         current_speed = base_speed * 0.5;
     }
@@ -85,8 +83,8 @@ void player::update(float dt, int view_w, int view_h)
 void player::draw(sf::RenderWindow &window)
 {
 
-    sprite.setPosition(static_cast<float>(position.first), static_cast<float>(position.second));
-    sprite.setScale(static_cast<float>(this->width) / sprite.getTexture()->getSize().x, static_cast<float>(this->height) / sprite.getTexture()->getSize().y);
+    sprite.setPosition(sf::Vector2f(static_cast<float>(position.first), static_cast<float>(position.second)));
+    sprite.setScale(sf::Vector2f(static_cast<float>(this->width) / sprite.getTexture().getSize().x, static_cast<float>(this->height) / sprite.getTexture().getSize().y));
     window.draw(sprite);
 }
 std::pair<int, int> player::get_collision()
