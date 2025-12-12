@@ -18,7 +18,6 @@ protected:
     int current_frame = 0;
     float animation_speed = 0.1f; // was int
     float animation_timer = 0;
-    std::vector<sf::Sprite> animated_sprite = {};
     std::vector<sf::Texture> textures; // keep textures alive for sprites
 
 public:
@@ -51,21 +50,42 @@ std::pair<int, int> generic_object::get_collision()
 void generic_object::load_sprites(std::string sprite_folder)
 {
     std::string base_path = sprite_folder;
+
     for (const auto &entry : std::filesystem::directory_iterator(base_path))
     {
         if (entry.path().extension() == ".png")
         {
-            this->textures.emplace_back();
-            if (this->textures.back().loadFromFile(entry.path().string()))
+            sf::Texture texture;
+            std::string path = entry.path().string();
+
+            if (texture.loadFromFile(path))
             {
-                sf::Sprite sprite(this->textures.back());
-                this->animated_sprite.push_back(sprite);
+
+                this->textures.push_back(std::move(texture));
             }
             else
             {
-                std::cerr << "Failed to load texture: " << entry.path().string() << "\n";
-                this->textures.pop_back();
+                std::cerr << "Failed to load texture: " << path << std::endl;
             }
         }
+    }
+
+    if (!this->textures.empty())
+    {
+        this->sprite.setTexture(this->textures[0]);
+
+        // CRITICAL FIX: In SFML 3, you must set the texture rect for the sprite to have size
+        sf::Vector2u texSize = this->textures[0].getSize();
+        this->sprite.setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(texSize.x, texSize.y)));
+
+        std::cout << "Sprite texture set to first loaded texture" << std::endl;
+
+        // Verify bounds after setting texture rect
+        sf::FloatRect spriteBounds = this->sprite.getGlobalBounds();
+        std::cout << "Sprite bounds after setting texture rect: w=" << spriteBounds.size.x << " h=" << spriteBounds.size.y << std::endl;
+    }
+    else
+    {
+        std::cerr << "WARNING: No textures loaded for " << sprite_folder << std::endl;
     }
 }

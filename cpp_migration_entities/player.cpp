@@ -15,7 +15,7 @@ private:
     float fy; // precise y position for dt-accurate movement
 
 public:
-    player(int x, int y, int w = 20, int h = 20, int base_speed_param = 200) : generic_object(x, y, w, h, "sprites/player/")
+    player(int x, int y, int w = 20, int h = 20, int base_speed_param = 300) : generic_object(x, y, w, h, "sprites/player/")
     {
         this->base_speed = static_cast<float>(base_speed_param);
         this->current_speed = this->base_speed;
@@ -39,14 +39,18 @@ public:
 void player::update(float dt, int view_w, int view_h)
 {
     // animation: only if we have frames
-    if (!animated_sprite.empty())
+    if (!textures.empty())
     {
         animation_timer += dt;
         if (animation_timer >= animation_speed)
         {
             animation_timer = 0;
-            current_frame = (current_frame + 1) % static_cast<int>(animated_sprite.size());
-            sprite = animated_sprite[current_frame];
+            current_frame = (current_frame + 1) % static_cast<int>(textures.size());
+            sprite.setTexture(textures[current_frame]);
+
+            // Must also set texture rect in SFML 3
+            sf::Vector2u texSize = textures[current_frame].getSize();
+            sprite.setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(texSize.x, texSize.y)));
         }
     }
 
@@ -103,10 +107,65 @@ void player::update(float dt, int view_w, int view_h)
 
 void player::draw(sf::RenderWindow &window)
 {
+    static bool firstDraw = true;
+    if (firstDraw)
+    {
+        std::cout << "=== Player draw called for first time ===" << std::endl;
+        std::cout << "Position: (" << fx << ", " << fy << ")" << std::endl;
+        std::cout << "Size: " << width << "x" << height << std::endl;
+        std::cout << "Textures count: " << textures.size() << std::endl;
+
+        // Check sprite color
+        sf::Color spriteColor = sprite.getColor();
+        std::cout << "Sprite color: R=" << (int)spriteColor.r << " G=" << (int)spriteColor.g
+                  << " B=" << (int)spriteColor.b << " A=" << (int)spriteColor.a << std::endl;
+
+        // Check sprite bounds
+        sf::FloatRect bounds = sprite.getGlobalBounds();
+        std::cout << "Sprite bounds: x=" << bounds.position.x << " y=" << bounds.position.y
+                  << " w=" << bounds.size.x << " h=" << bounds.size.y << std::endl;
+
+        firstDraw = false;
+    }
+
+    if (textures.empty())
+    {
+        std::cerr << "Cannot draw player: no textures loaded" << std::endl;
+        return;
+    }
+
     // draw using precise float position for smooth movement
     sprite.setPosition(sf::Vector2f(fx, fy));
 
-    sprite.setScale(sf::Vector2f(static_cast<float>(this->width) / sprite.getTexture().getSize().x, static_cast<float>(this->height) / sprite.getTexture().getSize().y));
+    // Get texture size and scale sprite to match width/height
+    const sf::Texture &currentTexture = sprite.getTexture();
+    sf::Vector2u texSize = currentTexture.getSize();
+
+    if (firstDraw == false) // only print once after firstDraw check
+    {
+        static int debugCount = 0;
+        if (debugCount == 0)
+        {
+
+            // Try to draw a simple test rectangle to verify rendering works
+            sf::RectangleShape testRect(sf::Vector2f(50.f, 50.f));
+            testRect.setPosition(sf::Vector2f(fx, fy));
+            testRect.setFillColor(sf::Color::Red);
+            window.draw(testRect);
+
+            debugCount++;
+        }
+    }
+
+    if (texSize.x > 0 && texSize.y > 0)
+    {
+        float scaleX = static_cast<float>(this->width) / static_cast<float>(texSize.x);
+        float scaleY = static_cast<float>(this->height) / static_cast<float>(texSize.y);
+        sprite.setScale(sf::Vector2f(scaleX, scaleY));
+    }
+
+    // Make sure sprite has proper color (not transparent)
+    sprite.setColor(sf::Color::White);
 
     window.draw(sprite);
 }

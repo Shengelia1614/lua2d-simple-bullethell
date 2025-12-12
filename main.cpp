@@ -9,9 +9,12 @@
 #include <variant>
 #include <SFML/Graphics.hpp>
 #include "cpp_migration_entities/player.cpp"
+#include "cpp_migration_states/main_menu.cpp"
 
 #define VIRTUAL_WIDTH 1280
 #define VIRTUAL_HEIGHT 720
+
+// g++.exe -fdiagnostics-color=always -g main.cpp -o main.exe -std=gnu++20 -lsfml-graphics -lsfml-window -lsfml-system      to run it ON MY PC
 
 // small helper for std::visit
 template <class... Ts>
@@ -37,6 +40,11 @@ int main()
 
     sf::Clock clock; // add clock to measure dt
 
+    MainMenuState mainMenu;
+    std::vector<std::int32_t> selectedTracks;
+    int selectedTrackIndex = -1;
+    mainMenu.enter(selectedTracks);
+
     while (window.isOpen())
     {
         // SFML 3: pollEvent() returns std::optional<sf::Event>
@@ -57,8 +65,19 @@ int main()
         window.setView(view);
         window.clear(sf::Color::Black);
 
-        main_player.update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
-        main_player.draw(window);
+        if (selectedTrackIndex == -1)
+        {
+            mainMenu.update(dt, window, selectedTrackIndex);
+            mainMenu.draw(window);
+        }
+        else
+        {
+            main_player.update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+            main_player.draw(window);
+        }
+
+        // main_player.update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+        // main_player.draw(window);
 
         window.display();
     }
