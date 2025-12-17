@@ -1,14 +1,6 @@
+#include "enemy.h"
 
-
-class enemy
-{
-private:
-public:
-    enemy(/* args */);
-    ~enemy();
-};
-
-enemy::enemy(/* args */)
+enemy::enemy(float x, float y, int w, int h, std::string sprite_folder) : generic_object(x, y, w, h, sprite_folder)
 {
 }
 

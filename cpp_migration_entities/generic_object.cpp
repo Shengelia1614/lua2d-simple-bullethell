@@ -1,50 +1,25 @@
-#pragma once
-#include <utility>
-#include <iostream>
-#include <vector>
-#include <filesystem>
-#include <cmath>
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
-#include <SFML/System.hpp>
+
+
+#include "generic_object.h"
+
+#define VIRTUAL_WIDTH 1280
+#define VIRTUAL_HEIGHT 720
 
 sf::Texture default_error_texture = sf::Texture();
 
-class generic_object
+generic_object::generic_object(float x, float y, int w, int h, std::string sprite_folder)
+    : sprite(default_error_texture)
 {
-protected:
-    void load_sprites(std::string sprite_folder);
+    load_sprites(sprite_folder);
+    position = std::make_pair(static_cast<float>(x), static_cast<float>(y));
+    width = w;
+    height = h;
+}
 
-    int current_frame = 0;
-    float animation_speed = 0.1f; // was int
-    float animation_timer = 0;
-    std::vector<sf::Texture> textures; // keep textures alive for sprites
-
-public:
-    generic_object(int x, int y, int w, int h, std::string sprite_folder) // removed extra qualification
-    {
-        load_sprites(sprite_folder);
-        position = std::make_pair(x, y);
-        width = w;
-        height = h;
-    }
-
-    ~generic_object() = default;
-
-    std::pair<int, int> position;
-    int width;
-    int height;
-
-    sf::Sprite sprite = sf::Sprite(default_error_texture);
-
-    std::pair<int, int> get_collision();
-
-    // Player class implementation
-};
-
-std::pair<int, int> generic_object::get_collision()
+std::pair<float, float> generic_object::get_collision()
 {
-    return std::make_pair(position.first + width / 4, position.second + height / 4);
+    return std::make_pair(position.first + width / 4.0f,
+                          position.second + height / 4.0f);
 }
 
 void generic_object::load_sprites(std::string sprite_folder)

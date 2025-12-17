@@ -7,12 +7,12 @@
 
 namespace fs = std::filesystem;
 
+#define VIRTUAL_WIDTH 1280
+#define VIRTUAL_HEIGHT 720
+
 class MainMenuState
 {
 private:
-    static constexpr int VIRTUAL_WIDTH = 1280;
-    static constexpr int VIRTUAL_HEIGHT = 720;
-
     int selectedIndex;
     std::vector<std::string> audioFiles;
     bool startButtonHovered;
@@ -52,7 +52,7 @@ public:
     {
     }
 
-    void enter(std::vector<std::int32_t> &selectedTracks)
+    void enter(std::vector<std::string> &selectedTracks)
     {
         selectedIndex = 1;
         audioFiles.clear();
@@ -93,6 +93,7 @@ public:
                         if (ext == ".mid" || ext == ".midi")
                         {
                             audioFiles.push_back(filename);
+                            selectedTracks.push_back(filename);
                         }
                     }
                 }

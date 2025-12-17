@@ -8,8 +8,15 @@
 #include <optional>
 #include <variant>
 #include <SFML/Graphics.hpp>
+
+// Include implementation files (they need to be compiled together)
+// IMPORTANT: Include in dependency order - base classes first!
+#include "cpp_migration_entities/generic_object.cpp"
 #include "cpp_migration_entities/player.cpp"
+#include "cpp_migration_entities/enemy.cpp"
+#include "cpp_migration_entities/bullet.cpp"
 #include "cpp_migration_states/main_menu.cpp"
+#include "cpp_migration_states/boss_stage.cpp"
 
 #define VIRTUAL_WIDTH 1280
 #define VIRTUAL_HEIGHT 720
@@ -25,6 +32,13 @@ struct overloaded : Ts...
 template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
+enum class GameState
+{
+    MAIN_MENU,
+    BOSS_STAGE,
+    EXIT
+};
+
 int main()
 {
     sf::RenderWindow window(
@@ -36,14 +50,15 @@ int main()
             sf::Vector2f(0.f, 0.f),
             sf::Vector2f(static_cast<float>(VIRTUAL_WIDTH), static_cast<float>(VIRTUAL_HEIGHT))));
 
-    player main_player = player(VIRTUAL_WIDTH / 2 - 10, VIRTUAL_HEIGHT / 2 - 10);
-
     sf::Clock clock; // add clock to measure dt
 
     MainMenuState mainMenu;
-    std::vector<std::int32_t> selectedTracks;
+    BossStageSate bossStage;
+    std::vector<std::string> selectedTracks;
     int selectedTrackIndex = -1;
     mainMenu.enter(selectedTracks);
+
+    GameState gameState = GameState::MAIN_MENU;
 
     while (window.isOpen())
     {
@@ -65,15 +80,23 @@ int main()
         window.setView(view);
         window.clear(sf::Color::Black);
 
-        if (selectedTrackIndex == -1)
+        if (gameState == GameState::MAIN_MENU)
         {
-            mainMenu.update(dt, window, selectedTrackIndex);
-            mainMenu.draw(window);
+            if (selectedTrackIndex == -1)
+            {
+                mainMenu.update(dt, window, selectedTrackIndex);
+                mainMenu.draw(window);
+            }
+            else
+            {
+                bossStage.set(selectedTracks[selectedTrackIndex]);
+                gameState = GameState::BOSS_STAGE;
+            }
         }
-        else
+        else if (gameState == GameState::BOSS_STAGE)
         {
-            main_player.update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
-            main_player.draw(window);
+            bossStage.update(dt, window);
+            bossStage.draw(window);
         }
 
         // main_player.update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);

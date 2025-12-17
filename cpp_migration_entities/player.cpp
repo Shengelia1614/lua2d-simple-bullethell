@@ -1,42 +1,13 @@
-#include <utility>
-#include <iostream>
-#include <vector>
-#include <filesystem>
-#include <cmath>
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
-#include <SFML/System.hpp>
-#include "generic_object.cpp"
+#include "player.h"
 
-class player : public generic_object
+Player::Player(float x, float y, int w, int h, int base_speed_param)
+    : generic_object(x, y, w, h, "sprites/player/")
 {
-private:
-    float fx; // precise x position for dt-accurate movement
-    float fy; // precise y position for dt-accurate movement
+    this->base_speed = static_cast<float>(base_speed_param);
+    this->current_speed = this->base_speed;
+}
 
-public:
-    player(int x, int y, int w = 20, int h = 20, int base_speed_param = 300) : generic_object(x, y, w, h, "sprites/player/")
-    {
-        this->base_speed = static_cast<float>(base_speed_param);
-        this->current_speed = this->base_speed;
-        this->fx = static_cast<float>(this->position.first);
-        this->fy = static_cast<float>(this->position.second);
-    }
-
-    ~player() = default;
-
-    float base_speed;
-    float current_speed;
-
-    void update(float dt, int view_w, int view_h);
-    void draw(sf::RenderWindow &window);
-
-    std::pair<int, int> get_collision();
-
-    // Player class implementation
-};
-
-void player::update(float dt, int view_w, int view_h)
+void Player::update(float dt, int view_w, int view_h)
 {
     // animation: only if we have frames
     if (!textures.empty())
@@ -82,8 +53,8 @@ void player::update(float dt, int view_w, int view_h)
         current_speed = base_speed;
 
     // use float positions for dt-accurate movement
-    fx += dx * current_speed * dt;
-    fy += dy * current_speed * dt;
+    this->position.first += dx * current_speed * dt;
+    this->position.second += dy * current_speed * dt;
 
     // clamp in float space
     float min_x = 0.f;
@@ -91,71 +62,42 @@ void player::update(float dt, int view_w, int view_h)
     float max_x = static_cast<float>(view_w - width);
     float max_y = static_cast<float>(view_h - height);
 
-    if (fx < min_x)
-        fx = min_x;
-    if (fy < min_y)
-        fy = min_y;
-    if (fx > max_x)
-        fx = max_x;
-    if (fy > max_y)
-        fy = max_y;
-
-    // keep integer base class position in sync (for collision, legacy code)
-    this->position.first = static_cast<int>(std::round(fx));
-    this->position.second = static_cast<int>(std::round(fy));
+    if (this->position.first < min_x)
+        this->position.first = min_x;
+    if (this->position.second < min_y)
+        this->position.second = min_y;
+    if (this->position.first > max_x)
+        this->position.first = max_x;
+    if (this->position.second > max_y)
+        this->position.second = max_y;
 }
 
-void player::draw(sf::RenderWindow &window)
+void Player::draw(sf::RenderWindow &window)
 {
     static bool firstDraw = true;
     if (firstDraw)
     {
-        std::cout << "=== Player draw called for first time ===" << std::endl;
-        std::cout << "Position: (" << fx << ", " << fy << ")" << std::endl;
-        std::cout << "Size: " << width << "x" << height << std::endl;
-        std::cout << "Textures count: " << textures.size() << std::endl;
 
         // Check sprite color
         sf::Color spriteColor = sprite.getColor();
-        std::cout << "Sprite color: R=" << (int)spriteColor.r << " G=" << (int)spriteColor.g
-                  << " B=" << (int)spriteColor.b << " A=" << (int)spriteColor.a << std::endl;
 
         // Check sprite bounds
         sf::FloatRect bounds = sprite.getGlobalBounds();
-        std::cout << "Sprite bounds: x=" << bounds.position.x << " y=" << bounds.position.y
-                  << " w=" << bounds.size.x << " h=" << bounds.size.y << std::endl;
 
         firstDraw = false;
     }
 
     if (textures.empty())
     {
-        std::cerr << "Cannot draw player: no textures loaded" << std::endl;
         return;
     }
 
     // draw using precise float position for smooth movement
-    sprite.setPosition(sf::Vector2f(fx, fy));
+    sprite.setPosition(sf::Vector2f(this->position.first, this->position.second));
 
     // Get texture size and scale sprite to match width/height
     const sf::Texture &currentTexture = sprite.getTexture();
     sf::Vector2u texSize = currentTexture.getSize();
-
-    if (firstDraw == false) // only print once after firstDraw check
-    {
-        static int debugCount = 0;
-        if (debugCount == 0)
-        {
-
-            // Try to draw a simple test rectangle to verify rendering works
-            sf::RectangleShape testRect(sf::Vector2f(50.f, 50.f));
-            testRect.setPosition(sf::Vector2f(fx, fy));
-            testRect.setFillColor(sf::Color::Red);
-            window.draw(testRect);
-
-            debugCount++;
-        }
-    }
 
     if (texSize.x > 0 && texSize.y > 0)
     {
@@ -170,7 +112,7 @@ void player::draw(sf::RenderWindow &window)
     window.draw(sprite);
 }
 
-std::pair<int, int> player::get_collision()
+std::pair<float, float> Player::get_collision()
 {
-    return std::pair<int, int>(static_cast<int>(std::round(this->fx + this->width / 2.0f)), static_cast<int>(std::round(this->fy + this->height / 2.0f)));
+    return std::pair<float, float>(this->position.first + this->width / 2.0f, this->position.second + this->height / 2.0f);
 }
