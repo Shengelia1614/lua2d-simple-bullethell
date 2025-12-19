@@ -53,11 +53,8 @@ void generic_object::load_sprites(std::string sprite_folder)
         sf::Vector2u texSize = this->textures[0].getSize();
         this->sprite.setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(texSize.x, texSize.y)));
 
-        std::cout << "Sprite texture set to first loaded texture" << std::endl;
-
         // Verify bounds after setting texture rect
         sf::FloatRect spriteBounds = this->sprite.getGlobalBounds();
-        std::cout << "Sprite bounds after setting texture rect: w=" << spriteBounds.size.x << " h=" << spriteBounds.size.y << std::endl;
     }
     else
     {

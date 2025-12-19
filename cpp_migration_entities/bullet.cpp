@@ -1,10 +1,10 @@
 #include "bullet.h"
 
-void bullet::homing(float dt, std::pair<int, int> *enemy_position)
+void bullet::homing(float dt, std::pair<int, int> *enemy_position, std::pair<int, int> *player_position)
 {
 
     std::pair<float, float> toPlayer = {player_position->first - this->position.first, player_position->second - this->position.second};
-    std::pair<float, float> toEnemy = {enemy_position->first - this->player_position->first, enemy_position->second - this->player_position->second};
+    std::pair<float, float> toEnemy = {enemy_position->first - player_position->first, enemy_position->second - player_position->second};
 
     float pte_distance = sqrt(toEnemy.first * toEnemy.first + toEnemy.second * toEnemy.second);
 
@@ -58,7 +58,7 @@ void bullet::homing(float dt, std::pair<int, int> *enemy_position)
     }
 }
 
-void bullet::update(float dt, std::pair<int, int> enemy_position)
+void bullet::update(float dt, std::pair<int, int> enemy_position, std::pair<int, int> player_position)
 {
     if (!this->active)
     {
@@ -88,21 +88,19 @@ void bullet::update(float dt, std::pair<int, int> enemy_position)
             this->velocity_boost = 0;
         }
 
-        this->speed = this->base_speed + this->velocity_boost;
-
         float currentMag = sqrt(this->velocity.first * this->velocity.first + this->velocity.second * this->velocity.second);
         if (currentMag > 0)
         {
             float dirX = this->velocity.first / currentMag;
             float dirY = this->velocity.second / currentMag;
-            this->velocity.first = dirX * this->speed;
-            this->velocity.second = dirY * this->speed;
+            this->velocity.first = dirX * (this->base_speed + this->velocity_boost);
+            this->velocity.second = dirY * (this->base_speed + this->velocity_boost);
         }
     }
 
     if (this->bounce_count == 0)
     {
-        this->homing(dt, &enemy_position);
+        this->homing(dt, &enemy_position, &player_position);
     }
 
     this->position.first = this->position.first + this->velocity.first * dt;
@@ -186,7 +184,7 @@ void bullet::draw(sf::RenderWindow &window)
         {
 
             // Try to draw a simple test rectangle to verify rendering works
-            sf::RectangleShape testRect(sf::Vector2f(50.f, 50.f));
+            sf::RectangleShape testRect(sf::Vector2f(width, height));
             testRect.setPosition(sf::Vector2f(position.first, position.second));
             testRect.setFillColor(sf::Color::Red);
             window.draw(testRect);
@@ -200,7 +198,7 @@ void bullet::draw(sf::RenderWindow &window)
         float scaleX = static_cast<float>(this->width) / static_cast<float>(texSize.x);
         float scaleY = static_cast<float>(this->height) / static_cast<float>(texSize.y);
         sprite.setScale(sf::Vector2f(scaleX, scaleY));
-    }
+        }
 
     sprite.setColor(sf::Color::White);
 

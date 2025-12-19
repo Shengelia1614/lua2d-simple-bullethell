@@ -1,6 +1,7 @@
 
 #pragma once
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <filesystem>
 #include <vector>
 #include <string>
@@ -9,6 +10,7 @@
 #include <fstream>
 #include <random>
 #include <algorithm>
+#include <cmath>
 #include "../cpp_migration_entities/player.h"
 #include "../cpp_migration_entities/enemy.h"
 #include "../cpp_migration_entities/bullet.h"
@@ -17,7 +19,7 @@ int PIANO_KEYS = 88;                   // Standard piano (MIDI 21-108)
 int PIANO_WIDTH = VIRTUAL_WIDTH * 0.3; // 30% of screen width
 int WHITE_KEY_HEIGHT = 50;             // Height of white keys
 int BLACK_KEY_HEIGHT = 32;             // Height of black keys (shorter)
-int PIANO_Y = 20;                      // Y position (top of screen)
+int PIANO_Y = 80;                      // Y position (top of screen)
 int PIANO_ARCH_DEPTH = 80;             // How deep the arch curves downward
 
 // Piano key pattern: true = white key, false = black key
@@ -161,9 +163,12 @@ class BossStageSate
 
     int colorscheme;
     Player player;
+    Enemy enemy;
     float bossInitialX;
     float bossInitialY;
     std::vector<bullet *> bullets;
+    sf::SoundBuffer soundBuffer[88];
+    sf::Sound *soundPlayers[88];
     float gameTime;
     size_t currentEventIndex;
     float startDelay;
@@ -179,7 +184,7 @@ class BossStageSate
     std::vector<PianoKey> pianoKeys;
 
 public:
-    BossStageSate() : player(0, 0), gameTime(0), currentEventIndex(0), startDelay(0), lastBulletTime(0), bulletClusterCount(0) {
+    BossStageSate() : player(0, 0), enemy(0, 0), gameTime(0), currentEventIndex(0), startDelay(0), lastBulletTime(0), bulletClusterCount(0) {
 
                       };
     void set(std::string track);
@@ -211,6 +216,16 @@ void BossStageSate::set(std::string track)
         return;
     }
 
+    for (int i = 0; i < 88; ++i)
+    {
+        std::string soundFile = "notes/keys/" + std::to_string(i + 1) + ".mp3";
+        if (!soundBuffer[i].loadFromFile(soundFile))
+        {
+            std::cerr << "Failed to load sound file: " << soundFile << std::endl;
+        }
+        soundPlayers[i] = new sf::Sound(soundBuffer[i]);
+    }
+
     std::string jsonContent((std::istreambuf_iterator<char>(file)),
                             std::istreambuf_iterator<char>());
 
@@ -232,6 +247,7 @@ void BossStageSate::set(std::string track)
 
     // Initialize player
     this->player = Player(VIRTUAL_WIDTH / 2.0f - 10.0f, VIRTUAL_HEIGHT / 2.0f - 10.0f);
+    this->enemy = Enemy(VIRTUAL_WIDTH / 2.0f - 30.0f, 10.0f, 60, 40); // Example enemy initialization
 
     // Initialize boss enemy at top middle of screen with slow movement
     float bossX = VIRTUAL_WIDTH / 2.0f - 30.0f; // center horizontally (60 is enemy width)
@@ -270,93 +286,139 @@ void BossStageSate::update(float dt, const sf::RenderWindow &window)
     // Update game time
     gameTime += dt;
 
-    // Process music events based on game time and start delay
-    while (currentEventIndex < events.size() && (events[currentEventIndex].time <= gameTime - startDelay))
+    // Update player
+    player.update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+    // Update boss only in player-targeting mode (not implemented yet)
+    // TODO: Add BOSS_MODE_PIANO_SPREAD flag and boss update logic
+
+    // Update barrier (not implemented yet)
+    // TODO: Add barrier update and spacebar check
+
+    // Spawn bullets based on note events
+    // Each event has a "time" field that determines when (in seconds)
+    // the bullet should spawn after the bossfight starts
+    // Account for start delay: bullets only spawn after the grace period
+    while (currentEventIndex < events.size())
     {
-        MusicEvent &ev = events[currentEventIndex];
+        MusicEvent &event = events[currentEventIndex];
 
-        int midiNum = ev.midi;
-        if (midiNum < 21 || midiNum > 108)
+        // Check if enough time has passed to spawn this bullet (accounting for start delay)
+        if (gameTime >= (event.time + startDelay))
         {
-            std::cerr << "Skipping out-of-range MIDI note: " << midiNum << std::endl;
+            // Only create bullets for note_on events
+            if (event.note_on)
+            {
+                // Spawn bullet from boss towards player
+                float bossX = bossInitialX;
+                float bossY = bossInitialY;
+                auto playerCollision = player.get_collision();
+
+                float dx, dy, targetX, targetY;
+
+                int noteIndex = event.midi - 20;                                            // Convert MIDI (21-108) to index (1-88)
+                float normalizedPos = (noteIndex - 1) / static_cast<float>(PIANO_KEYS - 1); // 0 to 1
+
+                // Map to angle: -75° to +75° (150° spread)
+                // Center is straight down (90° in standard coords, or PI/2 radians)
+                // REVERSED: lower notes (left) should shoot left, higher notes (right) should shoot right
+                float spreadDegrees = 180;
+                float minAngle = 90 - (spreadDegrees / 2); // 15°
+                float maxAngle = 90 + (spreadDegrees / 2); // 165°
+
+                // Reverse the mapping: 0 -> maxAngle (165°, left), 1 -> minAngle (15°, right)
+                float angleDegrees = maxAngle - normalizedPos * spreadDegrees;
+                float angleRadians = angleDegrees * (PI / 180.0f);
+                // Convert angle to direction vector
+                dx = std::cos(angleRadians);
+                dy = std::sin(angleRadians);
+
+                // Calculate target position
+                targetX = bossX + dx * 1000;
+                targetY = bossY + dy * 1000;
+                std::pair<float, float> target = std::make_pair(targetX, targetY);
+
+                // Create bullet with MIDI-based properties
+                int keyVelocity = static_cast<int>(std::clamp(event.velocity * 127.0f, 1.0f, 127.0f));
+                bullet *newBullet = new bullet(
+                    bossInitialX,
+                    bossInitialY,
+                    target,
+                    event.midi,
+                    keyVelocity,
+                    colorscheme,
+                    3,
+                    10.0f, // base size
+                    100.0f // base speed
+                );
+
+                bullets.push_back(newBullet);
+
+                // Play audio note
+                soundPlayers[event.midi - 21]->setVolume(66 + (event.velocity / 381));
+                soundPlayers[event.midi - 21]->stop();
+                soundPlayers[event.midi - 21]->play();
+            }
+
+            // Activate piano key visualization for ALL events (both note_on and note_off)
+            // MIDI notes 21-108 map to piano keys 0-87 (C++ uses 0-based indexing)
+            int keyIndex = event.midi - 21; // Convert MIDI (21-108) to key index (0-87)
+            if (keyIndex >= 0 && keyIndex < PIANO_KEYS)
+            {
+                pianoKeys[keyIndex].active = true;
+                pianoKeys[keyIndex].fadeTimer = pianoKeys[keyIndex].fadeDuration;
+            }
+
             currentEventIndex++;
-            continue;
-        }
-
-        int pianoIndex = midiNum - 21; // Map MIDI 21-108 to pianoKeys 0-87
-
-        if (ev.note_on)
-        {
-            // Note ON event: spawn bullets and light piano key
-            pianoKeys[pianoIndex].active = true;
-            pianoKeys[pianoIndex].fadeTimer = pianoKeys[pianoIndex].fadeDuration;
-
-            // Spawn bullet(s) based on note properties
-            float velocity = ev.velocity; // 0.0 to 1.0
-            float duration = ev.duration; // in seconds
-
-            // Calculate direction from boss to player
-            auto playerPos = player.get_collision();
-            float dirX = playerPos.first - bossInitialX;
-            float dirY = playerPos.second - bossInitialY;
-            float length = sqrt(dirX * dirX + dirY * dirY);
-            if (length > 0)
-            {
-                dirX /= length;
-                dirY /= length;
-            }
-            else
-            {
-                dirX = 0;
-                dirY = 1; // Default downwards
-            }
-
-            // Create bullet(s) here based on velocity and duration
-            int keyVelocity = static_cast<int>(std::clamp(velocity * 127.0f, 1.0f, 127.0f));
-            int midiClamped = std::clamp(midiNum - 21, 0, 88);
-            float scaleFactor = 3 - ((midiClamped - 1) / (88 - 1) * 2); // Scale factor between 1.0 and 3.0
-            int baseSize = static_cast<int>(10 * scaleFactor);
-            int baseSpeed = static_cast<int>(120 * (4 - scaleFactor));
-            bullet *newBullet = new bullet((bossInitialX), (bossInitialY), &player.position, midiNum, keyVelocity, colorscheme, 3, (baseSize), (baseSpeed));
-            bullets.push_back(newBullet);
         }
         else
         {
-            // Note OFF event: could implement if needed
+            // Haven't reached the time for this event yet, stop checking
+            break;
         }
-        currentEventIndex++;
+        std::cout << bullets.size() << std::endl;
     }
-    // Update player
-    player.update(dt, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+
+    // Update piano key fade timers
+    for (int i = 0; i < PIANO_KEYS; i++)
+    {
+        if (pianoKeys[i].fadeTimer > 0)
+        {
+            pianoKeys[i].fadeTimer = pianoKeys[i].fadeTimer - dt;
+            if (pianoKeys[i].fadeTimer <= 0)
+            {
+                pianoKeys[i].active = false;
+                pianoKeys[i].fadeTimer = 0;
+            }
+        }
+    }
+
     // Update bullets
     for (auto it = bullets.begin(); it != bullets.end();)
     {
         bullet *b = *it;
-        if (b->active)
-        {
-            auto playerCollision = player.get_collision();
-            b->update(dt, std::make_pair(static_cast<int>(playerCollision.first), static_cast<int>(playerCollision.second)));
-            ++it;
-        }
-        else
+
+        // Update bullet
+        // auto playerPos = player.get_collision();
+        b->update(dt, enemy.position, player.get_collision());
+
+        // TODO: Check barrier collision for bullets
+        // if (self.barrier:isActive()) then ... end
+
+        // Remove inactive bullets
+        if (!b->active)
         {
             delete b;
             it = bullets.erase(it);
         }
-    }
-    // Update piano keys fade timers
-    for (auto &key : pianoKeys)
-    {
-        if (key.active)
+        else
         {
-            key.fadeTimer -= dt;
-            if (key.fadeTimer <= 0.0f)
-            {
-                key.active = false;
-                key.fadeTimer = 0.0f;
-            }
+            ++it;
         }
     }
+
+    // TODO: Check collisions with player
+    // if (Collision.checkAABB(...)) then return 'gameover' end
 }
 void BossStageSate::draw(sf::RenderWindow &window)
 {
@@ -370,53 +432,76 @@ void BossStageSate::draw(sf::RenderWindow &window)
     }
 
     // Draw piano visualization
-    float whiteKeyWidth = static_cast<float>(PIANO_WIDTH) / std::count(std::begin(KEY_PATTERN), std::end(KEY_PATTERN), true);
+    float whiteKeyWidth = static_cast<float>(PIANO_WIDTH) / 52.0f; // 52 white keys on a standard piano
     float blackKeyWidth = whiteKeyWidth * 0.6f;
     float pianoX = (VIRTUAL_WIDTH - PIANO_WIDTH) / 2.0f;
 
+    // First pass: Draw all white keys
     for (int i = 0, whiteKeyIndex = 0; i < PIANO_KEYS; i++)
     {
         bool isWhite = KEY_PATTERN[i % 12];
-        float keyX;
-        float keyY = PIANO_Y;
-        float keyWidth;
-        float keyHeight;
 
         if (isWhite)
         {
-            keyX = pianoX + whiteKeyIndex * whiteKeyWidth;
-            keyWidth = whiteKeyWidth;
-            keyHeight = WHITE_KEY_HEIGHT;
+            float keyX = pianoX + whiteKeyIndex * whiteKeyWidth;
+            float keyY = PIANO_Y;
+            float keyWidth = whiteKeyWidth;
+            float keyHeight = WHITE_KEY_HEIGHT;
+
+            sf::RectangleShape keyShape(sf::Vector2f(keyWidth - 1, keyHeight)); // -1 for spacing
+            keyShape.setPosition(sf::Vector2f(keyX, keyY));
+
+            if (pianoKeys[i].active)
+            {
+                float intensity = pianoKeys[i].fadeTimer / pianoKeys[i].fadeDuration;
+                std::uint8_t alpha = static_cast<std::uint8_t>(255 * intensity);
+                keyShape.setFillColor(sf::Color(255, 255, 0, alpha)); // Yellow for active white keys
+            }
+            else
+            {
+                keyShape.setFillColor(sf::Color::White);
+            }
+
+            window.draw(keyShape);
+            whiteKeyIndex++;
+        }
+        else if (isWhite)
+        {
+            whiteKeyIndex++;
+        }
+    }
+
+    // Second pass: Draw all black keys on top
+    for (int i = 0, whiteKeyIndex = 0; i < PIANO_KEYS; i++)
+    {
+        bool isWhite = KEY_PATTERN[i % 12];
+
+        if (isWhite)
+        {
             whiteKeyIndex++;
         }
         else
         {
-            keyX = pianoX + (whiteKeyIndex - 1) * whiteKeyWidth + whiteKeyWidth - (blackKeyWidth / 2.0f);
-            keyWidth = blackKeyWidth;
-            keyHeight = BLACK_KEY_HEIGHT;
-        }
+            float keyX = pianoX + (whiteKeyIndex - 1) * whiteKeyWidth + whiteKeyWidth - (blackKeyWidth / 2.0f);
+            float keyY = PIANO_Y;
+            float keyWidth = blackKeyWidth;
+            float keyHeight = BLACK_KEY_HEIGHT;
 
-        sf::RectangleShape keyShape(sf::Vector2f(keyWidth - 1, keyHeight)); // -1 for spacing
-        keyShape.setPosition(sf::Vector2f(keyX, keyY));
+            sf::RectangleShape keyShape(sf::Vector2f(keyWidth - 1, keyHeight)); // -1 for spacing
+            keyShape.setPosition(sf::Vector2f(keyX, keyY));
 
-        if (pianoKeys[i].active)
-        {
-            float intensity = pianoKeys[i].fadeTimer / pianoKeys[i].fadeDuration;
-            std::uint8_t alpha = static_cast<std::uint8_t>(255 * intensity);
-
-            if (isWhite)
-                keyShape.setFillColor(sf::Color(255, 255, 0, alpha)); // Yellow for active white keys
-            else
+            if (pianoKeys[i].active)
+            {
+                float intensity = pianoKeys[i].fadeTimer / pianoKeys[i].fadeDuration;
+                std::uint8_t alpha = static_cast<std::uint8_t>(255 * intensity);
                 keyShape.setFillColor(sf::Color(255, 165, 0, alpha)); // Orange for active black keys
-        }
-        else
-        {
-            if (isWhite)
-                keyShape.setFillColor(sf::Color::White);
+            }
             else
+            {
                 keyShape.setFillColor(sf::Color::Black);
-        }
+            }
 
-        window.draw(keyShape);
+            window.draw(keyShape);
+        }
     }
 }

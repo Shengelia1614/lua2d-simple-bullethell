@@ -26,7 +26,7 @@ private:
     float saturation;
     float value;
     float alpha;
-    std::pair<float, float> *player_position;
+    std::pair<float, float> target;
     std::pair<float, float> starting_player_position;
 
     int animationSet;
@@ -34,10 +34,9 @@ private:
     int animationIndex = 1;
     float animationTimer = 0;
     float animationSpeed = 0.08;
-    float scale;
+    // float scale;
 
-    int speed;
-    int base_size;
+    // int base_size;
     int base_speed;
     int bounce_count = 0;
     int max_bounces;
@@ -47,22 +46,21 @@ private:
     float velocity_boost;
     float velocity_decay_rate;
 
-    void homing(float dt, std::pair<int, int> *enemy_position);
+    void homing(float dt, std::pair<int, int> *enemy_position, std::pair<int, int> *player_position);
 
 public:
     bool active = true;
 
-    bullet(int x, int y, std::pair<float, float> *target, int midi, int key_velocity, int colorscheme, int max_bounces = 3, int base_size = 10, int base_speed = 120, float velocity_decay_rate = 4) : generic_object(x, y, base_size, base_size, "sprites/projectile/")
+    bullet(int x, int y, std::pair<float, float> target, int midi, int key_velocity, int colorscheme, int max_bounces = 3, int base_size = 10, int base_speed = 120, float velocity_decay_rate = 4) : generic_object(x, y, base_size, base_size, "sprites/projectile/")
     {
-        this->speed = speed;
-        this->base_size = base_size;
+        // this->base_size = base_size;
         this->max_bounces = max_bounces;
 
-        this->player_position = target;
-        this->starting_player_position = *target;
+        this->target = target;
+        this->starting_player_position = target;
 
-        float dx = target->first - x;
-        float dy = target->second - y;
+        float dx = target.first - x;
+        float dy = target.second - y;
         float distance = std::sqrt(dx * dx + dy * dy);
 
         // Normalize direction
@@ -78,9 +76,9 @@ public:
         height = static_cast<int>(base_size * scaleFactor);
         this->base_speed = base_speed;
 
-        this->speed = static_cast<int>(base_speed * (4 - scaleFactor));
+        // this->base_size = static_cast<int>(base_speed * (4 - scaleFactor));
 
-        this->velocity_boost = key_velocity / 127.0f * speed;
+        this->velocity_boost = (key_velocity / 127.0f) * base_speed;
 
         this->hue = colorscheme / 360.0;
 
@@ -90,23 +88,18 @@ public:
 
         this->alpha = 0.6 + (key_velocity / 127) * 0.4;
 
-        float real_speed = this->speed + this->velocity_boost;
+        float real_speed = this->base_speed + this->velocity_boost;
         velocity.first = (real_speed * dx);
         velocity.second = (real_speed * dy);
 
-        this->scale = 2.7 * scaleFactor;
+        // this->scale = 2.7 * scaleFactor;
 
         this->animationSet = std::rand() % 4 + 1;
     }
 
     void homeless_update(float dt);
-    void update(float dt, std::pair<int, int> enemy_position);
+    void update(float dt, std::pair<int, int> enemy_position, std::pair<int, int> player_position);
     void draw(sf::RenderWindow &window);
-
-    ~bullet()
-    {
-        delete player_position;
-    };
 };
 
 void bullet_garbage_collector(std::vector<bullet *> &bullets)
