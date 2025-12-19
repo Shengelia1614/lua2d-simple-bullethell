@@ -71,9 +71,11 @@ public:
         }
 
         int midi_clamped = std::clamp(midi - 21, 0, 88);
-        float scaleFactor = 3 - ((midi_clamped - 1) / (88 - 1) * 2); // Scale factor between 1.0 and 3.0
-        width = static_cast<int>(base_size * scaleFactor);
-        height = static_cast<int>(base_size * scaleFactor);
+        float scaleFactor = 5 - (((float)(midi_clamped - 1) / (88 - 1)) * 4); // Scale factor between 1.0 and 3.0
+        this->width = static_cast<int>(base_size * scaleFactor);
+        this->height = static_cast<int>(base_size * scaleFactor);
+        std::cout << midi_clamped << " -  " << midi << " -  " << scaleFactor << std::endl;
+
         this->base_speed = base_speed;
 
         // this->base_size = static_cast<int>(base_speed * (4 - scaleFactor));

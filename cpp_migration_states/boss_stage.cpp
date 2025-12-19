@@ -348,7 +348,7 @@ void BossStageSate::update(float dt, const sf::RenderWindow &window)
                     keyVelocity,
                     colorscheme,
                     3,
-                    10.0f, // base size
+                    20.0f, // base size
                     100.0f // base speed
                 );
 

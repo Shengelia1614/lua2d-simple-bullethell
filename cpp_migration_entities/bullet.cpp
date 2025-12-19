@@ -60,19 +60,19 @@ void bullet::homing(float dt, std::pair<int, int> *enemy_position, std::pair<int
 
 void bullet::update(float dt, std::pair<int, int> enemy_position, std::pair<int, int> player_position)
 {
-    if (!this->active)
-    {
-        return;
-    };
 
-    this->animationTimer = this->animationTimer + dt;
-    if (this->animationTimer >= this->animationSpeed)
+    if (!textures.empty())
     {
-        this->animationTimer = this->animationTimer - this->animationSpeed;
-        this->animationIndex = this->animationIndex + 1;
-        if (this->animationIndex > FRAME_COUNT)
+        animation_timer += dt;
+        if (animation_timer >= animation_speed)
         {
-            this->animationIndex = 1;
+            animation_timer = 0;
+            current_frame = (current_frame + 1) % 5;
+            sprite.setTexture(textures[current_frame]);
+
+            // Must also set texture rect in SFML 3
+            sf::Vector2u texSize = textures[current_frame].getSize();
+            sprite.setTextureRect(sf::IntRect(sf::Vector2i(0, 0), sf::Vector2i(texSize.x, texSize.y)));
         }
     }
 
@@ -198,7 +198,7 @@ void bullet::draw(sf::RenderWindow &window)
         float scaleX = static_cast<float>(this->width) / static_cast<float>(texSize.x);
         float scaleY = static_cast<float>(this->height) / static_cast<float>(texSize.y);
         sprite.setScale(sf::Vector2f(scaleX, scaleY));
-        }
+    }
 
     sprite.setColor(sf::Color::White);
 
